@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Cuerpo del camión (cabina) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M28,48 L28,68 L46,68 L46,55 L38,48 Z"/>
+    
+    <!-- Cuerpo del camión (carga/contenedor) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M46,42 L46,68 L82,68 L82,42 Z"/>
+    
+    <!-- Ventana de la cabina -->
+    <path
+        android:fillColor="#1565C0"
+        android:pathData="M30,50 L30,58 L40,58 L40,50 Z"/>
+    
+    <!-- Líneas del contenedor -->
+    <path
+        android:strokeColor="#1565C0"
+        android:strokeWidth="2"
+        android:pathData="M58,42 L58,68"/>
+    <path
+        android:strokeColor="#1565C0"
+        android:strokeWidth="2"
+        android:pathData="M70,42 L70,68"/>
+    
+    <!-- Rueda trasera -->
+    <path
+        android:fillColor="#37474F"
+        android:pathData="M38,68m-7,0a7,7 0,1 1,14 0a7,7 0,1 1,-14 0"/>
+    <path
+        android:fillColor="#90A4AE"
+        android:pathData="M38,68m-3.5,0a3.5,3.5 0,1 1,7 0a3.5,3.5 0,1 1,-7 0"/>
+    
+    <!-- Rueda delantera -->
+    <path
+        android:fillColor="#37474F"
+        android:pathData="M72,68m-7,0a7,7 0,1 1,14 0a7,7 0,1 1,-14 0"/>
+    <path
+        android:fillColor="#90A4AE"
+        android:pathData="M72,68m-3.5,0a3.5,3.5 0,1 1,7 0a3.5,3.5 0,1 1,-7 0"/>
+    
+    <!-- Flecha de movimiento (indica logística/entrega) -->
+    <path
+        android:fillColor="#4CAF50"
+        android:pathData="M58,32 L72,32 L72,28 L82,36 L72,44 L72,40 L58,40 Z"/>
+
+</vector>
