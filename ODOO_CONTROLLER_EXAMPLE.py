@@ -348,8 +348,22 @@ class RouteOptimizationAPI(http.Controller):
                     'message': 'Ruta no encontrada'
                 }
             
+            base_url = request.httprequest.host_url.rstrip('/')
             lines = []
             for line in route.route_lines:
+                attachments = []
+                if hasattr(line, 'attachment_ids') and line.attachment_ids:
+                    for attachment in line.attachment_ids:
+                        attachments.append({
+                            'id': attachment.id,
+                            'name': attachment.name or '',
+                            'filename': attachment.name or '',
+                            'mimetype': attachment.mimetype or 'application/octet-stream',
+                            'file_size': attachment.file_size or 0,
+                            'create_date': str(attachment.create_date) if attachment.create_date else '',
+                            'download_url': f'{base_url}/api/attachment/{attachment.id}?format=download',
+                        })
+                
                 lines.append({
                     'id': line.id,
                     'partner_id': {
@@ -363,7 +377,8 @@ class RouteOptimizationAPI(http.Controller):
                     'sequence': line.sequence or 0,
                     'notes': line.notes or '',
                     'state': line.state or 'draft',
-                    'scheduled_time': line.scheduled_time or ''
+                    'scheduled_time': line.scheduled_time or '',
+                    'attachments': attachments,
                 })
             
             route_data = {
@@ -652,7 +667,7 @@ class RouteOptimizationAPI(http.Controller):
                 'success': False,
                 'message': str(e)
             }
-    
+            
     @http.route('/api/driver/stats', type='json', auth='user', methods=['GET'])
     def get_driver_stats(self, **kwargs):
         """
@@ -806,6 +821,21 @@ class RouteOptimizationAPI(http.Controller):
             for route in routes:
                 lines = []
                 for line in route.route_lines:
+                    # Obtener archivos adjuntos si existen en tu modelo
+                    base_url = request.httprequest.host_url.rstrip('/')
+                    attachments = []
+                    if hasattr(line, 'attachment_ids') and line.attachment_ids:
+                        for attachment in line.attachment_ids:
+                            attachments.append({
+                                'id': attachment.id,
+                                'name': attachment.name or '',
+                                'filename': attachment.name or '',
+                                'mimetype': attachment.mimetype or 'application/octet-stream',
+                                'file_size': attachment.file_size or 0,
+                                'create_date': str(attachment.create_date) if attachment.create_date else '',
+                                'download_url': f'{base_url}/api/attachment/{attachment.id}?format=download',
+                            })
+                    
                     lines.append({
                         'id': line.id,
                         'partner_id': {
@@ -819,7 +849,8 @@ class RouteOptimizationAPI(http.Controller):
                         'sequence': line.sequence or 0,
                         'notes': line.notes or '',
                         'state': line.state or 'draft',
-                        'scheduled_time': line.scheduled_time or ''
+                        'scheduled_time': line.scheduled_time or '',
+                        'attachments': attachments,
                     })
                 
                 route_list.append({
@@ -843,3 +874,82 @@ class RouteOptimizationAPI(http.Controller):
                 'success': False,
                 'message': str(e)
             }
+
+    @http.route('/api/attachment/<int:attachment_id>', type='http', auth='public', methods=['GET'], csrf=False)
+    def get_attachment(self, attachment_id, **kwargs):
+        """
+        Obtener un archivo adjunto por su ID.
+        Retorna el archivo como descarga o como base64 según el parámetro 'format'.
+        """
+        try:
+            output_format = kwargs.get('format', 'base64')
+            attachment = request.env['ir.attachment'].sudo().browse(attachment_id)
+            
+            if not attachment.exists():
+                response_data = {'success': False, 'message': 'Archivo adjunto no encontrado'}
+                return request.make_response(json.dumps(response_data), headers=[('Content-Type', 'application/json')])
+            
+            if output_format == 'download':
+                file_content = base64.b64decode(attachment.datas) if attachment.datas else b''
+                headers = [
+                    ('Content-Type', attachment.mimetype or 'application/octet-stream'),
+                    ('Content-Disposition', f'attachment; filename="{attachment.name}"'),
+                    ('Content-Length', len(file_content))
+                ]
+                return request.make_response(file_content, headers=headers)
+            else:
+                response_data = {
+                    'success': True,
+                    'data': {
+                        'id': attachment.id,
+                        'name': attachment.name or '',
+                        'filename': attachment.name or '',
+                        'mimetype': attachment.mimetype or 'application/octet-stream',
+                        'file_size': attachment.file_size or 0,
+                        'datas': attachment.datas.decode('utf-8') if attachment.datas else '',
+                        'create_date': str(attachment.create_date) if attachment.create_date else '',
+                    }
+                }
+                return request.make_response(json.dumps(response_data), headers=[('Content-Type', 'application/json')])
+        except Exception as e:
+            return request.make_response(json.dumps({'success': False, 'message': str(e)}), headers=[('Content-Type', 'application/json')])
+
+    @http.route([
+        '/api/routes/line/<int:line_id>/attachments',
+        '/api/routes/line/attachments/<int:line_id>'
+    ], type='http', auth='public', methods=['GET'], csrf=False)
+    def get_line_attachments(self, line_id, **kwargs):
+        """
+        Obtener todos los archivos adjuntos de una línea de ruta.
+        """
+        try:
+            line = request.env['mss.route.line'].sudo().browse(line_id)
+            if not line.exists():
+                response_data = {'success': False, 'message': 'Línea de ruta no encontrada'}
+                return request.make_response(json.dumps(response_data), headers=[('Content-Type', 'application/json')])
+            
+            base_url = request.httprequest.host_url.rstrip('/')
+            attachments = []
+            if hasattr(line, 'attachment_ids') and line.attachment_ids:
+                for attachment in line.attachment_ids:
+                    attachments.append({
+                        'id': attachment.id,
+                        'name': attachment.name or '',
+                        'filename': attachment.name or '',
+                        'mimetype': attachment.mimetype or 'application/octet-stream',
+                        'file_size': attachment.file_size or 0,
+                        'create_date': str(attachment.create_date) if attachment.create_date else '',
+                        'download_url': f'{base_url}/api/attachment/{attachment.id}?format=download',
+                    })
+            
+            response_data = {
+                'success': True,
+                'data': {
+                    'line_id': line_id,
+                    'attachments': attachments,
+                    'count': len(attachments)
+                }
+            }
+            return request.make_response(json.dumps(response_data), headers=[('Content-Type', 'application/json')])
+        except Exception as e:
+            return request.make_response(json.dumps({'success': False, 'message': str(e)}), headers=[('Content-Type', 'application/json')])

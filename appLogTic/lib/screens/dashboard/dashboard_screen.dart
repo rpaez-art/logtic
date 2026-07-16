@@ -8,6 +8,7 @@ import '../../models/odoo_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/odoo_provider.dart';
 import '../../widgets/theme_toggle_button.dart';
+import '../../widgets/attachment_tile.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -206,7 +207,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
 
-              // History Items
+              // History Items (expandable with lines & documents)
               if (odoo.isLoadingHistory)
                 const SliverToBoxAdapter(
                   child: Center(
@@ -225,7 +226,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
                       final item = odoo.routesHistory[index];
-                      return _HistoryItemCard(item: item, index: index);
+                      return _DashboardHistoryCard(item: item);
                     },
                     childCount: odoo.routesHistory.length > 5 ? 5 : odoo.routesHistory.length,
                   ),
@@ -519,7 +520,7 @@ class _SummaryCards extends StatelessWidget {
   Widget build(BuildContext context) {
     final summary = stats?.summary;
     return SizedBox(
-      height: 120,
+      height: 130,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -887,81 +888,559 @@ class _TodayStatItem extends StatelessWidget {
   }
 }
 
-// History Item Card
-class _HistoryItemCard extends StatelessWidget {
+// ─────────────────────────────────────────────────────────────
+// Dashboard history card — expandable with lines & documents
+// ─────────────────────────────────────────────────────────────
+class _DashboardHistoryCard extends StatefulWidget {
   final RouteHistoryItem item;
-  final int index;
 
-  const _HistoryItemCard({required this.item, required this.index});
+  const _DashboardHistoryCard({required this.item});
+
+  @override
+  State<_DashboardHistoryCard> createState() => _DashboardHistoryCardState();
+}
+
+class _DashboardHistoryCardState extends State<_DashboardHistoryCard> {
+  bool _isExpanded = false;
 
   @override
   Widget build(BuildContext context) {
+    final odoo = context.watch<OdooProvider>();
+    // Get fresh item from provider so it updates when lines are fetched
+    final historyList = odoo.routesHistory;
+    final index = historyList.indexWhere((h) => h.id == widget.item.id);
+    final item = index >= 0 ? historyList[index] : widget.item;
+
     final completionRate = item.totalDeliveries > 0
         ? (item.completedDeliveries * 100 / item.totalDeliveries)
         : 0.0;
-    final isComplete = completionRate >= 100;
+    final hasLines = item.lines != null && item.lines!.isNotEmpty;
+    final isLoading = odoo.isHistoryLineLoading(item.id);
+    final canFetch = item.lines == null && item.totalDeliveries > 0;
+    final hasDocs = hasLines && item.lines!.any((l) => l.attachments != null && l.attachments!.isNotEmpty);
 
     return Card(
       margin: const EdgeInsets.fromLTRB(20, 4, 20, 4),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      elevation: 1,
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: isComplete
-                    ? AppColors.statusCompleted.withValues(alpha: 0.1)
-                    : AppColors.secondary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(
-                isComplete ? Icons.check_circle : Icons.remove_circle_outline,
-                color: isComplete ? AppColors.statusCompleted : AppColors.secondary,
-                size: 28,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: hasDocs ? BorderSide(color: AppColors.accent.withValues(alpha: 0.3), width: 1) : BorderSide.none,
+      ),
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () {
+              if (hasLines) {
+                setState(() => _isExpanded = !_isExpanded);
+              } else if (canFetch && !isLoading) {
+                odoo.fetchHistoryRouteLines(item.id);
+                setState(() => _isExpanded = true);
+              }
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    item.name,
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
+                  // Main row
                   Row(
                     children: [
-                      Icon(Icons.calendar_today, size: 12, color: AppColors.gray400),
-                      const SizedBox(width: 4),
-                      Text(item.date, style: const TextStyle(fontSize: 12, color: AppColors.gray500)),
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: completionRate >= 100
+                              ? AppColors.statusCompleted.withValues(alpha: 0.1)
+                              : AppColors.secondary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          completionRate >= 100 ? Icons.check_circle : Icons.remove_circle_outlined,
+                          color: completionRate >= 100 ? AppColors.statusCompleted : AppColors.secondary,
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.name,
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                const Icon(Icons.calendar_today, size: 14, color: AppColors.gray500),
+                                const SizedBox(width: 4),
+                                Text(
+                                  item.date,
+                                  style: const TextStyle(fontSize: 12, color: AppColors.gray500),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            item.durationFormatted,
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.corpGreen),
+                          ),
+                          Text(
+                            '${item.completedDeliveries}/${item.totalDeliveries}',
+                            style: const TextStyle(fontSize: 12, color: AppColors.gray500),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: LinearProgressIndicator(
+                          value: completionRate / 100,
+                          backgroundColor: AppColors.gray200,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            completionRate >= 100 ? AppColors.statusCompleted : AppColors.secondary,
+                          ),
+                          minHeight: 6,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${completionRate.toInt()}%',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: completionRate >= 100 ? AppColors.statusCompleted : AppColors.secondary,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // Expand indicator & status row
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      if (hasDocs)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.accent.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.description, size: 12, color: AppColors.accentDark),
+                              SizedBox(width: 4),
+                              Text(
+                                'Con documentos',
+                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: AppColors.accentDark),
+                              ),
+                            ],
+                          ),
+                        )
+                      else if (isLoading)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              width: 12, height: 12,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.accentDark),
+                            ),
+                            const SizedBox(width: 6),
+                            const Text(
+                              'Cargando entregas...',
+                              style: TextStyle(fontSize: 10, color: AppColors.gray500),
+                            ),
+                          ],
+                        )
+                      else
+                        const SizedBox.shrink(),
+                      Row(
+                        children: [
+                          Text(
+                            hasLines
+                                ? '${item.lines!.length} entregas'
+                                : 'Ver entregas',
+                            style: const TextStyle(fontSize: 11, color: AppColors.gray500),
+                          ),
+                          const SizedBox(width: 4),
+                          AnimatedRotation(
+                            turns: _isExpanded ? 0.5 : 0.0,
+                            duration: const Duration(milliseconds: 200),
+                            child: Icon(
+                              Icons.keyboard_arrow_down,
+                              size: 20,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ],
               ),
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  item.durationFormatted,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primary),
+          ),
+
+          // Expanded delivery lines or loading state
+          if (_isExpanded)
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.gray50.withValues(alpha: 0.7),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '${item.completedDeliveries}/${item.totalDeliveries}',
-                  style: const TextStyle(fontSize: 12, color: AppColors.gray500),
+              ),
+              child: isLoading
+                  ? const Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            SizedBox(
+                              width: 24, height: 24,
+                              child: CircularProgressIndicator(strokeWidth: 3),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Cargando entregas...',
+                              style: TextStyle(fontSize: 12, color: AppColors.gray500),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : hasLines
+                      ? Column(
+                          children: item.lines!
+                              .map((line) => _DashboardLineCard(line: line))
+                              .toList(),
+                        )
+                      : item.lines != null
+                          ? const Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Center(
+                                child: Text(
+                                  'No hay entregas disponibles',
+                                  style: TextStyle(fontSize: 12, color: AppColors.gray500),
+                                ),
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Dashboard line card — same as history line card but adapted for dashboard
+class _DashboardLineCard extends StatefulWidget {
+  final RouteLineData line;
+
+  const _DashboardLineCard({required this.line});
+
+  @override
+  State<_DashboardLineCard> createState() => _DashboardLineCardState();
+}
+
+class _DashboardLineCardState extends State<_DashboardLineCard> {
+  bool _showProducts = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final line = widget.line;
+    final stateColor = _getStateColor(line.state);
+    final hasAttachments = line.attachments != null && line.attachments!.isNotEmpty;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Card(
+        elevation: 0,
+        color: Colors.transparent,
+        margin: EdgeInsets.zero,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Partner & state
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: stateColor.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        line.partnerId.name.isNotEmpty
+                            ? line.partnerId.name[0].toUpperCase()
+                            : '?',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: stateColor),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          line.partnerId.name,
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (line.obra != null && line.obra!.isNotEmpty)
+                          Text(
+                            '📍 ${line.obra}',
+                            style: const TextStyle(fontSize: 11, color: AppColors.gray600),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: stateColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      _getStateLabel(line.state),
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: stateColor),
+                    ),
+                  ),
+                ],
+              ),
+              if (line.street != null && line.street!.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.place, size: 14, color: AppColors.primary),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(line.street!, style: const TextStyle(fontSize: 12)),
+                          if (line.city != null && line.city!.isNotEmpty)
+                            Text(line.city!, style: const TextStyle(fontSize: 10, color: AppColors.gray500)),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ],
+
+              // Notes/comments
+              if (line.notes != null && line.notes!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(color: AppColors.gray50, borderRadius: BorderRadius.circular(8)),
+                  child: Text(_parseHtml(line.notes!), style: const TextStyle(fontSize: 12, color: AppColors.gray700)),
+                ),
+              ],
+
+              // Incomplete reason
+              if (line.incompleteReason != null && line.incompleteReason!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.statusIncomplete.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.report_problem_outlined, size: 14, color: AppColors.statusIncomplete),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Motivo: ${line.incompleteNotes ?? line.incompleteReason!}',
+                          style: const TextStyle(fontSize: 11, color: AppColors.statusIncomplete),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              // Delivery times (Chips)
+              if (line.startTime != null || line.pickupTime != null || line.endTime != null) ...[
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    if (line.startTime != null)
+                      _DTimeChip(icon: Icons.play_arrow, time: _formatTime(line.startTime!), color: AppColors.statusInProgress),
+                    if (line.pickupTime != null)
+                      _DTimeChip(icon: Icons.local_shipping, time: _formatTime(line.pickupTime!), color: AppColors.statusPickedUp),
+                    if (line.endTime != null)
+                      _DTimeChip(icon: Icons.check_circle, time: _formatTime(line.endTime!), color: AppColors.statusCompleted),
+                  ],
+                ),
+              ],
+
+              // Products summary and list
+              if (line.orderLines != null && line.orderLines!.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                InkWell(
+                  onTap: () => setState(() => _showProducts = !_showProducts),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.inventory, size: 16, color: AppColors.primary),
+                            const SizedBox(width: 6),
+                            Text(
+                              '${line.orderLines!.length} productos',
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.primary),
+                            ),
+                            if (line.orderName != null)
+                              Text(' • ${line.orderName}', style: const TextStyle(fontSize: 10, color: AppColors.gray500)),
+                          ],
+                        ),
+                        Icon(_showProducts ? Icons.expand_less : Icons.expand_more, color: AppColors.primary, size: 18),
+                      ],
+                    ),
+                  ),
+                ),
+                if (_showProducts)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
+                    child: Column(
+                      children: line.orderLines!
+                          .map((orderLine) => Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 3),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(child: Text(orderLine.productName, style: const TextStyle(fontSize: 11))),
+                                    Text(
+                                      '${orderLine.quantity.toInt()} ${orderLine.uom}',
+                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.primary),
+                                    ),
+                                  ],
+                                ),
+                              ))
+                          .toList(),
+                    ),
+                  ),
+              ],
+
+              // Documents (grouped by type)
+              if (hasAttachments) ...[
+                const SizedBox(height: 10),
+                AttachmentsGrouped(attachments: line.attachments!),
+              ],
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Color _getStateColor(String state) {
+    switch (state) {
+      case 'done': return AppColors.statusCompleted;
+      case 'picked_up': return AppColors.statusPickedUp;
+      case 'in_progress': return AppColors.statusInProgress;
+      case 'incomplete': case 'partial': return AppColors.statusIncomplete;
+      case 'cancelled': return AppColors.statusCancelled;
+      default: return AppColors.statusPending;
+    }
+  }
+
+  String _getStateLabel(String state) {
+    switch (state) {
+      case 'done': return '✓ Entregado';
+      case 'picked_up': return '📦 Recogido';
+      case 'in_progress': return '🚛 En camino';
+      case 'incomplete': return '⚠ Incompleta';
+      case 'partial': return '⚠ Parcial';
+      case 'cancelled': return '✗ Cancelado';
+      default: return '⏳ Pendiente';
+    }
+  }
+
+  String _formatTime(String dateTime) {
+    try {
+      final parts = dateTime.split(' ');
+      if (parts.length == 2) {
+        final time = parts[1].split(':');
+        return '${time[0]}:${time[1]}';
+      }
+      return dateTime;
+    } catch (_) {
+      return dateTime;
+    }
+  }
+
+  String _parseHtml(String html) {
+    return html
+        .replaceAll(RegExp(r'<[^>]*>'), '')
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll('&', '&')
+        .replaceAll('<', '<')
+        .replaceAll('>', '>')
+        .replaceAll('"', '"')
+        .trim();
+  }
+}
+
+class _DTimeChip extends StatelessWidget {
+  final IconData icon;
+  final String time;
+  final Color color;
+
+  const _DTimeChip({required this.icon, required this.time, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(right: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(time, style: TextStyle(fontSize: 10, color: color)),
+        ],
       ),
     );
   }

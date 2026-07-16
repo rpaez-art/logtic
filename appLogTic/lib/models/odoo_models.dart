@@ -810,12 +810,12 @@ class RouteHistoryLinesResponse {
   RouteHistoryLinesResponse({required this.success, this.message, this.lines});
 
   factory RouteHistoryLinesResponse.fromJson(Map<String, dynamic> json) {
+    final data = json['data'];
+    final linesList = (data?['route_lines'] ?? data?['lines']) as List<dynamic>?;
     return RouteHistoryLinesResponse(
       success: json['success'] ?? false,
       message: json['message'],
-      lines: (json['data']?['lines'] as List<dynamic>?)
-          ?.map((e) => RouteLineData.fromJson(e))
-          .toList(),
+      lines: linesList?.map((e) => RouteLineData.fromJson(e)).toList(),
     );
   }
 }

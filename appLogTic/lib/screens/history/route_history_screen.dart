@@ -451,130 +451,154 @@ class _HistoryDetailCardState extends State<_HistoryDetailCard> {
 }
 
 /// Widget for each delivery line within a history route
-class _HistoryLineCard extends StatelessWidget {
+/// Matches the style of _RouteActivityCard from routes_screen.dart
+class _HistoryLineCard extends StatefulWidget {
   final RouteLineData line;
 
   const _HistoryLineCard({required this.line});
 
   @override
+  State<_HistoryLineCard> createState() => _HistoryLineCardState();
+}
+
+class _HistoryLineCardState extends State<_HistoryLineCard> {
+  bool _showProducts = false;
+
+  @override
   Widget build(BuildContext context) {
+    final line = widget.line;
     final stateColor = _getStateColor(line.state);
     final hasAttachments = line.attachments != null && line.attachments!.isNotEmpty;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: Card(
-        elevation: 0,
-        color: Colors.transparent,
-        margin: EdgeInsets.zero,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Partner & state
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: stateColor.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        line.partnerId.name.isNotEmpty
-                            ? line.partnerId.name[0].toUpperCase()
-                            : '?',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: stateColor),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          line.partnerId.name,
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (line.street != null && line.street!.isNotEmpty)
-                          Text(
-                            line.street!,
-                            style: const TextStyle(fontSize: 11, color: AppColors.gray500),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: stateColor.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      _getStateLabel(line.state),
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: stateColor),
-                    ),
-                  ),
-                ],
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Partner & state
+            Row(children: [
+              Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(color: stateColor.withValues(alpha: 0.15), shape: BoxShape.circle),
+                child: Center(child: Text(
+                  line.partnerId.name.isNotEmpty ? line.partnerId.name[0].toUpperCase() : '?',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: stateColor),
+                )),
               ),
-
-              // Incomplete reason
-              if (line.incompleteReason != null && line.incompleteReason!.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.statusIncomplete.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.report_problem_outlined, size: 14, color: AppColors.statusIncomplete),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          'Motivo: ${line.incompleteNotes ?? line.incompleteReason!}',
-                          style: const TextStyle(fontSize: 11, color: AppColors.statusIncomplete),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-
-              // Documents (grouped by type)
-              if (hasAttachments) ...[
-                const SizedBox(height: 10),
-                AttachmentsGrouped(attachments: line.attachments!),
-              ],
-
-              // Products summary
-              if (line.orderLines != null && line.orderLines!.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Row(
+              const SizedBox(width: 10),
+              Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(line.partnerId.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                  if (line.obra != null && line.obra!.isNotEmpty)
+                    Text('📍 ${line.obra}', style: const TextStyle(fontSize: 12, color: AppColors.gray600)),
+                ],
+              )),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(color: stateColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
+                child: Text(_getStateLabel(line.state), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: stateColor)),
+              ),
+            ]),
+            if (line.street != null && line.street!.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Icon(Icons.place, size: 16, color: AppColors.primary),
+                const SizedBox(width: 6),
+                Expanded(child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.inventory, size: 14, color: AppColors.gray500),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${line.orderLines!.length} productos',
-                      style: const TextStyle(fontSize: 11, color: AppColors.gray500),
+                    Text(line.street!, style: const TextStyle(fontSize: 13)),
+                    if (line.city != null && line.city!.isNotEmpty)
+                      Text(line.city!, style: const TextStyle(fontSize: 11, color: AppColors.gray600)),
+                  ],
+                )),
+              ]),
+            ],
+            if (line.notes != null && line.notes!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: AppColors.gray50, borderRadius: BorderRadius.circular(10)),
+                child: Text(_parseHtml(line.notes!), style: const TextStyle(fontSize: 13)),
+              ),
+            ],
+
+            // Incomplete reason
+            if (line.incompleteReason != null && line.incompleteReason!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.statusIncomplete.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.report_problem_outlined, size: 16, color: AppColors.statusIncomplete),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Motivo: ${line.incompleteNotes ?? line.incompleteReason!}',
+                        style: const TextStyle(fontSize: 12, color: AppColors.statusIncomplete),
+                      ),
                     ),
-                    if (line.orderName != null) Text(' • ${line.orderName}', style: const TextStyle(fontSize: 11, color: AppColors.gray400)),
                   ],
                 ),
-              ],
+              ),
             ],
-          ),
+
+            if (line.startTime != null || line.pickupTime != null || line.endTime != null) ...[
+              const SizedBox(height: 8),
+              Row(children: [
+                if (line.startTime != null) _HTimeChip(icon: Icons.play_arrow, time: _formatTime(line.startTime!), color: AppColors.statusInProgress),
+                if (line.pickupTime != null) _HTimeChip(icon: Icons.local_shipping, time: _formatTime(line.pickupTime!), color: AppColors.statusPickedUp),
+                if (line.endTime != null) _HTimeChip(icon: Icons.check_circle, time: _formatTime(line.endTime!), color: AppColors.statusCompleted),
+              ]),
+            ],
+            if (line.orderLines != null && line.orderLines!.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              InkWell(
+                onTap: () => setState(() => _showProducts = !_showProducts),
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(10)),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                    Row(children: [
+                      const Icon(Icons.inventory, size: 18, color: AppColors.primary),
+                      const SizedBox(width: 8),
+                      Text('${line.orderLines!.length} productos', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.primary)),
+                      if (line.orderName != null) Text(' • ${line.orderName}', style: const TextStyle(fontSize: 11, color: AppColors.gray600)),
+                    ]),
+                    Icon(_showProducts ? Icons.expand_less : Icons.expand_more, color: AppColors.primary, size: 20),
+                  ]),
+                ),
+              ),
+              if (_showProducts)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Column(
+                    children: line.orderLines!.map((orderLine) => Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                        Expanded(child: Text(orderLine.productName, style: const TextStyle(fontSize: 12))),
+                        Text('${orderLine.quantity.toInt()} ${orderLine.uom}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.primary)),
+                      ]),
+                    )).toList(),
+                  ),
+                ),
+            ],
+            // Documents section (grouped by type)
+            if (hasAttachments) ...[
+              const SizedBox(height: 10),
+              AttachmentsGrouped(attachments: line.attachments!),
+            ],
+          ],
         ),
       ),
     );
@@ -601,6 +625,58 @@ class _HistoryLineCard extends StatelessWidget {
       case 'cancelled': return '✗ Cancelado';
       default: return '⏳ Pendiente';
     }
+  }
+
+  String _formatTime(String dateTime) {
+    try {
+      final parts = dateTime.split(' ');
+      if (parts.length == 2) {
+        final time = parts[1].split(':');
+        return '${time[0]}:${time[1]}';
+      }
+      return dateTime;
+    } catch (_) {
+      return dateTime;
+    }
+  }
+
+  String _parseHtml(String html) {
+    return html
+        .replaceAll(RegExp(r'<[^>]*>'), '')
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll('&', '&')
+        .replaceAll('<', '<')
+        .replaceAll('>', '>')
+        .replaceAll('"', '"')
+        .trim();
+  }
+}
+
+class _HTimeChip extends StatelessWidget {
+  final IconData icon;
+  final String time;
+  final Color color;
+
+  const _HTimeChip({required this.icon, required this.time, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(right: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(time, style: TextStyle(fontSize: 10, color: color)),
+        ],
+      ),
+    );
   }
 }
 

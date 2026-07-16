@@ -246,7 +246,7 @@ class RetrofitClient {
 
   // History lines (lazy-load)
   Future<RouteHistoryLinesResponse> getRouteHistoryLines(int routeId) async {
-    final response = await _request('GET', '${AppConfig.apiRoutesHistoryLines}/$routeId/lines');
+    final response = await _request('GET', '${AppConfig.apiRouteDetails}/$routeId');
     return RouteHistoryLinesResponse.fromJson(jsonDecode(response.body));
   }
 
