@@ -21,7 +21,7 @@ class LocalNotificationService {
     if (_initialized) return;
 
     // Android initialization (default icon from AndroidManifest)
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings('@drawable/app_icon');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -34,7 +34,7 @@ class LocalNotificationService {
     );
 
     await _plugin.initialize(
-      initSettings,
+      settings: initSettings,
       onDidReceiveNotificationResponse: _onNotificationTap,
     );
 
@@ -104,7 +104,7 @@ class LocalNotificationService {
       priority: Priority.high,
       playSound: true,
       enableVibration: true,
-      icon: '@mipmap/ic_launcher',
+      icon: '@drawable/app_icon',
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -118,12 +118,18 @@ class LocalNotificationService {
       iOS: iosDetails,
     );
 
-    await _plugin.show(id, title, body, details, payload: payload);
+    await _plugin.show(
+      id: id,
+      title: title,
+      body: body,
+      notificationDetails: details,
+      payload: payload,
+    );
   }
 
   /// Cancel a specific notification by ID.
   Future<void> cancel(int id) async {
-    await _plugin.cancel(id);
+    await _plugin.cancel(id: id);
   }
 
   /// Cancel all notifications.

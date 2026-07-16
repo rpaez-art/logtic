@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "79380829637",
+    "project_id": "logtic-e2bda",
+    "storage_bucket": "logtic-e2bda.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:79380829637:android:4ef44016b1ac562ff8e7ac",
+        "android_client_info": {
+          "package_name": "com.corpocrea.logtic"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBoiQXbXe8CSg0ykY4QdHzpE8jsyuyAxpE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

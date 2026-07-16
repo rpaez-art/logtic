@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 /// Log severity level.
 enum LogLevel {
@@ -73,11 +74,74 @@ class LogService {
   final List<LogEntry> _logs = [];
   LogLevel _minLevel = LogLevel.debug;
 
-  /// Minimum level to record.  Entries below this are discarded.
-  LogLevel minLevel = LogLevel.debug;
+  /// Minimum level to record. Entries below this are discarded.
+  LogLevel get minLevel => _minLevel;
+  set minLevel(LogLevel level) => _minLevel = level;
+
+  File? _logFile;
+  bool _fileLoggingEnabled = false;
 
   /// Return a copy of all buffered entries.
   List<LogEntry> get entries => List.unmodifiable(_logs);
+
+  // ── Initialization & Permissions ──
+
+  /// Initialize the logger. Only sets up the file if permissions are already granted.
+  /// Won't ask for permissions natively to prevent startup crash.
+  Future<void> init() async {
+    if (kIsWeb || !Platform.isAndroid) return;
+    
+    try {
+      final hasManage = await Permission.manageExternalStorage.isGranted;
+      final hasStorage = await Permission.storage.isGranted;
+      
+      if (hasManage || hasStorage) {
+        await _setupFile();
+      } else {
+        debugPrint('LogService: No storage permissions yet. File logging pending.');
+      }
+    } catch (e) {
+      debugPrint('LogService init error: $e');
+    }
+  }
+
+  /// Request permissions and initialize file logging.
+  /// Safe to call after runApp.
+  Future<void> requestPermissionsAndInit() async {
+    if (kIsWeb || !Platform.isAndroid) return;
+
+    try {
+      debugPrint('LogService: Requesting storage permissions...');
+      var status = await Permission.storage.request();
+      if (!status.isGranted) {
+        status = await Permission.manageExternalStorage.request();
+      }
+
+      if (status.isGranted) {
+        await _setupFile();
+      } else {
+        debugPrint('LogService: Storage permission denied.');
+      }
+    } catch (e) {
+      debugPrint('LogService: Error requesting permissions: $e');
+    }
+  }
+
+  Future<void> _setupFile() async {
+    try {
+      final directory = Directory('/storage/emulated/0/Download/logtic_logs');
+      if (!await directory.exists()) {
+        await directory.create(recursive: true);
+      }
+      
+      final date = DateTime.now().toIso8601String().split('T').first;
+      _logFile = File('${directory.path}/log_$date.txt');
+      _fileLoggingEnabled = true;
+      info('SYSTEM', 'LogService file logging enabled in Download/logtic_logs');
+    } catch (e) {
+      debugPrint('LogService: Failed to setup log file: $e');
+    }
+  }
 
   // ── Core logging ──
 
@@ -98,13 +162,21 @@ class LogService {
 
     // Also emit to Flutter's debug console in debug mode
     debugPrint(entry.formatted);
+
+    // Append to file if enabled
+    if (_fileLoggingEnabled && _logFile != null) {
+      try {
+        _logFile!.writeAsStringSync('${entry.formatted}\n', mode: FileMode.append);
+      } catch (e) {
+        debugPrint('LogService: Failed to write to log file: $e');
+      }
+    }
   }
 
   void debug(String tag, String message) => _log(LogLevel.debug, tag, message);
   void info(String tag, String message) => _log(LogLevel.info, tag, message);
   void warn(String tag, String message) => _log(LogLevel.warn, tag, message);
-  void error(String tag, String message) =>
-      _log(LogLevel.error, tag, message);
+  void error(String tag, String message) => _log(LogLevel.error, tag, message);
 
   /// Log an exception with stack trace.
   void exception(String tag, dynamic exception, [StackTrace? stack]) {
@@ -117,11 +189,20 @@ class LogService {
     );
     _logs.add(entry);
     if (_logs.length > _ringSize) _logs.removeAt(0);
-    debugPrint('❌ [$tag] $msg');
-    if (stack != null) debugPrint(stack.toString());
+    
+    debugPrint(entry.formatted);
+
+    // Append exception to file if enabled
+    if (_fileLoggingEnabled && _logFile != null) {
+      try {
+        _logFile!.writeAsStringSync('${entry.formatted}\n', mode: FileMode.append);
+      } catch (e) {
+        debugPrint('LogService: Failed to write exception to log file: $e');
+      }
+    }
   }
 
-  // ── File export ──
+  // ── File export (legacy) ──
 
   /// Write all logs to a text file and return the file path.
   /// Each line is one log entry in formatted form.

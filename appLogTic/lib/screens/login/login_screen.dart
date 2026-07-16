@@ -371,7 +371,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                         ),
                         ),
                         
-                        const Spacer(flex: 2),
+                        const SizedBox(height: 48),
                         
                         // Footer
                         const Padding(

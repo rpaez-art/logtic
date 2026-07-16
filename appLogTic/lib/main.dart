@@ -10,6 +10,7 @@ import 'config/router.dart';
 import 'widgets/notification_banner.dart';
 import 'services/local_notification_service.dart';
 import 'services/background_sync_service.dart';
+import 'services/log_service.dart';
 import 'providers/auth_provider.dart';
 import 'providers/odoo_provider.dart';
 import 'providers/route_provider.dart';
@@ -21,7 +22,7 @@ import 'providers/theme_provider.dart';
 /// Top-level background message handler (required by Firebase)
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  debugPrint('🔔 FCM Background: ${message.messageId}');
+  LogService.instance.debug('FCM', '🔔 FCM Background: ${message.messageId}');
   // Store route data for when app opens
   if (message.data.containsKey('route')) {
     final prefs = await SharedPreferences.getInstance();
@@ -31,23 +32,45 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
 
-  // Initialize FCM
-  final messaging = FirebaseMessaging.instance;
-  await messaging.requestPermission();
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  try {
+    await LogService.instance.init();
+  } catch (e) {
+    debugPrint('LogService init error: $e');
+  }
 
-  // Initialize local notifications for foreground display
-  await LocalNotificationService.instance.init();
+  // Safe Firebase setup
+  try {
+    await Firebase.initializeApp();
+    final messaging = FirebaseMessaging.instance;
+    await messaging.requestPermission();
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  } catch (e, stack) {
+    LogService.instance.exception('Firebase', e, stack);
+  }
+
+  // Safe Local Notifications setup
+  try {
+    await LocalNotificationService.instance.init();
+  } catch (e, stack) {
+    LogService.instance.exception('LocalNotification', e, stack);
+  }
 
   // Restore theme preference before app starts
   final themeProvider = ThemeProvider();
-  await themeProvider.loadPreference();
+  try {
+    await themeProvider.loadPreference();
+  } catch (e, stack) {
+    LogService.instance.exception('Theme', e, stack);
+  }
 
   // Restore session before app starts
   final authProvider = AuthProvider();
-  await authProvider.restoreSession();
+  try {
+    await authProvider.restoreSession();
+  } catch (e, stack) {
+    LogService.instance.exception('Auth', e, stack);
+  }
 
   runApp(LogticApp(
     authProvider: authProvider,
@@ -83,8 +106,11 @@ class _LogticAppState extends State<LogticApp> {
       _handleDeepLink(data);
     };
 
-    // Start background sync after the widget tree is built
-    WidgetsBinding.instance.addPostFrameCallback((_) => _initBackgroundSync());
+    // Start background sync and request permissions after the widget tree is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initBackgroundSync();
+      LogService.instance.requestPermissionsAndInit();
+    });
   }
 
   void _initBackgroundSync() {
