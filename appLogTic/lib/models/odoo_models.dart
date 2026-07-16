@@ -742,6 +742,7 @@ class RouteHistoryItem {
   final String durationFormatted;
   final int totalDeliveries;
   final int completedDeliveries;
+  final List<RouteLineData>? lines;
 
   RouteHistoryItem({
     required this.id,
@@ -753,6 +754,7 @@ class RouteHistoryItem {
     this.durationFormatted = '',
     this.totalDeliveries = 0,
     this.completedDeliveries = 0,
+    this.lines,
   });
 
   factory RouteHistoryItem.fromJson(Map<String, dynamic> json) {
@@ -766,6 +768,54 @@ class RouteHistoryItem {
       durationFormatted: json['duration_formatted'] ?? '',
       totalDeliveries: json['total_deliveries'] ?? 0,
       completedDeliveries: json['completed_deliveries'] ?? 0,
+      lines: (json['lines'] as List<dynamic>?)
+          ?.map((e) => RouteLineData.fromJson(e))
+          .toList(),
+    );
+  }
+
+  RouteHistoryItem copyWith({
+    int? id,
+    String? name,
+    String? date,
+    String? startDate,
+    String? endDate,
+    double? durationMinutes,
+    String? durationFormatted,
+    int? totalDeliveries,
+    int? completedDeliveries,
+    List<RouteLineData>? lines,
+  }) {
+    return RouteHistoryItem(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      date: date ?? this.date,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      durationMinutes: durationMinutes ?? this.durationMinutes,
+      durationFormatted: durationFormatted ?? this.durationFormatted,
+      totalDeliveries: totalDeliveries ?? this.totalDeliveries,
+      completedDeliveries: completedDeliveries ?? this.completedDeliveries,
+      lines: lines ?? this.lines,
+    );
+  }
+}
+
+/// Response from `api/routes/history/{id}/lines`
+class RouteHistoryLinesResponse {
+  final bool success;
+  final String? message;
+  final List<RouteLineData>? lines;
+
+  RouteHistoryLinesResponse({required this.success, this.message, this.lines});
+
+  factory RouteHistoryLinesResponse.fromJson(Map<String, dynamic> json) {
+    return RouteHistoryLinesResponse(
+      success: json['success'] ?? false,
+      message: json['message'],
+      lines: (json['data']?['lines'] as List<dynamic>?)
+          ?.map((e) => RouteLineData.fromJson(e))
+          .toList(),
     );
   }
 }

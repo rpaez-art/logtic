@@ -12,6 +12,7 @@ import '../../providers/route_provider.dart';
 import './widgets/photo_capture_dialog.dart';
 import './widgets/incomplete_reason_dialog.dart';
 import '../../widgets/theme_toggle_button.dart';
+import '../../widgets/attachment_tile.dart';
 
 class RoutesScreen extends StatefulWidget {
   const RoutesScreen({super.key});
@@ -551,6 +552,11 @@ class _RouteActivityCardState extends State<_RouteActivityCard> {
                     )).toList(),
                   ),
                 ),
+            ],
+            // Documents section (grouped by type)
+            if (widget.line.attachments != null && widget.line.attachments!.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              AttachmentsGrouped(attachments: widget.line.attachments!),
             ],
             const SizedBox(height: 12),
             _buildActionButtons(context),

@@ -21,6 +21,7 @@ class AppConfig {
   static const String apiRouteState = 'api/routes/state';
   static const String apiDriverStats = 'api/driver/stats';
   static const String apiRoutesHistory = 'api/routes/history';
+  static const String apiRoutesHistoryLines = 'api/routes/history';
   static const String apiRoutesCheckNew = 'api/routes/check-new';
   static const String apiFcmRegister = 'api/fcm/register';
   static const String apiLineAttachments = 'api/routes/line/attachments';

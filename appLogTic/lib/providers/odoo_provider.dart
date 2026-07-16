@@ -25,6 +25,9 @@ class OdooProvider extends ChangeNotifier {
   List<RouteHistoryItem> _routesHistory = [];
   bool _isLoadingHistory = false;
 
+  /// IDs of history routes currently fetching their lines
+  final Set<int> _loadingHistoryLineIds = {};
+
   bool _isDownloadingAttachment = false;
   String _downloadError = '';
 
@@ -46,6 +49,7 @@ class OdooProvider extends ChangeNotifier {
   String get statsError => _statsError;
   List<RouteHistoryItem> get routesHistory => _routesHistory;
   bool get isLoadingHistory => _isLoadingHistory;
+  bool isHistoryLineLoading(int routeId) => _loadingHistoryLineIds.contains(routeId);
   bool get isDownloadingAttachment => _isDownloadingAttachment;
   String get downloadError => _downloadError;
 
@@ -420,6 +424,29 @@ class OdooProvider extends ChangeNotifier {
       debugPrint('Error fetching history: $e');
     } finally {
       _isLoadingHistory = false;
+      notifyListeners();
+    }
+  }
+
+  /// Fetches route lines for a specific history route and updates the item in place.
+  Future<void> fetchHistoryRouteLines(int routeId) async {
+    if (_loadingHistoryLineIds.contains(routeId)) return;
+    try {
+      _loadingHistoryLineIds.add(routeId);
+      notifyListeners();
+
+      final response = await _client.getRouteHistoryLines(routeId);
+      if (response.success) {
+        final index = _routesHistory.indexWhere((item) => item.id == routeId);
+        if (index >= 0) {
+          // Always update after fetch — even an empty list prevents re-fetching
+          _routesHistory[index] = _routesHistory[index].copyWith(lines: response.lines ?? []);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching history lines for route $routeId: $e');
+    } finally {
+      _loadingHistoryLineIds.remove(routeId);
       notifyListeners();
     }
   }

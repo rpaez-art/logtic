@@ -244,6 +244,12 @@ class RetrofitClient {
     await _request('POST', AppConfig.apiFcmRegister, body: request.toJson());
   }
 
+  // History lines (lazy-load)
+  Future<RouteHistoryLinesResponse> getRouteHistoryLines(int routeId) async {
+    final response = await _request('GET', '${AppConfig.apiRoutesHistoryLines}/$routeId/lines');
+    return RouteHistoryLinesResponse.fromJson(jsonDecode(response.body));
+  }
+
   // Attachments
   Future<LineAttachmentsResponse> getLineAttachments(int lineId) async {
     final response = await _request('GET', '${AppConfig.apiLineAttachments}/$lineId');
