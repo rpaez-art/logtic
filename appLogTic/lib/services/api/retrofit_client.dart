@@ -255,6 +255,11 @@ class RetrofitClient {
     _baseUrl = AppConfig.odooBaseUrl;
     await _cookieManager.clearCookies();
   }
+
+  // Restore session
+  Future<void> restoreSession() async {
+    await _cookieManager.restoreCookies();
+  }
 }
 
 class Cookie {

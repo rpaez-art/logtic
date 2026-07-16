@@ -4,6 +4,7 @@ import '../../config/theme.dart';
 import '../../models/odoo_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/odoo_provider.dart';
+import '../../widgets/theme_toggle_button.dart';
 
 class RouteHistoryScreen extends StatefulWidget {
   const RouteHistoryScreen({super.key});
@@ -52,6 +53,11 @@ class _RouteHistoryScreenState extends State<RouteHistoryScreen> {
               }
             },
             icon: const Icon(Icons.refresh),
+            tooltip: 'Actualizar',
+          ),
+          const Padding(
+            padding: EdgeInsets.only(right: 4),
+            child: AnimatedThemeToggle(),
           ),
         ],
       ),

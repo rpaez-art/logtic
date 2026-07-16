@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../../config/theme.dart';
 import '../../config/app_config.dart';
-import '../../providers/auth_provider.dart';
+import '../../widgets/theme_toggle_button.dart';
 
 class OdooConfigScreen extends StatefulWidget {
   const OdooConfigScreen({super.key});
@@ -16,7 +16,6 @@ class _OdooConfigScreenState extends State<OdooConfigScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _showPassword = false;
-  bool _isTesting = false;
 
   final String _fixedUrl = AppConfig.odooBaseUrl;
 
@@ -35,8 +34,14 @@ class _OdooConfigScreenState extends State<OdooConfigScreen> {
         title: const Text('Configuración Odoo API', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+        actions: [
+          const Padding(
+            padding: EdgeInsets.only(right: 4),
+            child: AnimatedThemeToggle(),
+          ),
+        ],
         leading: IconButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.pop(),
           icon: const Icon(Icons.arrow_back),
         ),
       ),
@@ -119,13 +124,9 @@ class _OdooConfigScreenState extends State<OdooConfigScreen> {
   }
 
   void _saveConfig(BuildContext context) async {
-    setState(() => _isTesting = true);
-    final auth = context.read<AuthProvider>();
-
     // Save Odoo config to shared preferences
     // The actual test would connect to Odoo API
 
-    setState(() => _isTesting = false);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

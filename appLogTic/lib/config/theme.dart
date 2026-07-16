@@ -31,11 +31,14 @@ class AppColors {
   static const Color statusInProgress = Color(0xFFCBA052);
   static const Color statusPickedUp = Color(0xFFD9B76A);
   static const Color statusCompleted = Color(0xFF1D3C34);
+  static const Color statusCompletedLight = Color(0xFF2A7D5C);
   static const Color statusIncomplete = Color(0xFFE67E22);
   static const Color statusCancelled = Color(0xFFB91C1C);
 
   // Neutros
   static const Color white = Color(0xFFFFFFFF);
+  static const Color white70 = Color(0xB3FFFFFF);
+  static const Color white24 = Color(0x3DFFFFFF);
   static const Color black = Color(0xFF25282A);
   static const Color gray50 = Color(0xFFFAFAFA);
   static const Color gray100 = Color(0xFFF5F5F5);
@@ -79,7 +82,7 @@ class AppTheme {
       centerTitle: false,
       elevation: 0,
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
@@ -165,7 +168,7 @@ class AppTheme {
       centerTitle: false,
       elevation: 0,
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),

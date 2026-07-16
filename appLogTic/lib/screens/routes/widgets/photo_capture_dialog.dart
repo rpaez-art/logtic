@@ -1,7 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:provider/provider.dart';
 import '../../../config/theme.dart';
 import '../../../utils/pair.dart';
 import '../../../providers/odoo_provider.dart';
@@ -60,11 +60,17 @@ class _PhotoCaptureDialogState extends State<PhotoCaptureDialog> {
   }
 
   Future<void> _processImage(File file) async {
-    // Simplified - real implementation would compress and encode base64
-    setState(() {
-      _capturedImage = file;
-      _showSourceSelector = false;
-    });
+    try {
+      final bytes = await file.readAsBytes();
+      final base64Str = base64Encode(bytes);
+      setState(() {
+        _capturedImage = file;
+        _imageBase64 = base64Str;
+        _showSourceSelector = false;
+      });
+    } catch (e) {
+      debugPrint('Error processing image: $e');
+    }
   }
 
   @override

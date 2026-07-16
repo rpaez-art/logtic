@@ -10,6 +10,7 @@ class RouteProvider extends ChangeNotifier {
   RouteFilter _currentFilter = RouteFilter.pending;
 
   List<RouteModel> get routes => _routes;
+  List<RouteModel> get allRoutes => _allRoutes;
   RouteModel? get selectedRoute => _selectedRoute;
   RouteFilter get currentFilter => _currentFilter;
 

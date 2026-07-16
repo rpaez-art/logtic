@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../models/route.dart';
 import '../../providers/driver_monitor_provider.dart';
+import '../../widgets/theme_toggle_button.dart';
 
 class DriverMonitorScreen extends StatefulWidget {
   const DriverMonitorScreen({super.key});
@@ -38,15 +40,20 @@ class _DriverMonitorScreenState extends State<DriverMonitorScreen> {
             if (_selectedDriver != null) {
               setState(() => _selectedDriver = null);
             } else {
-              Navigator.pop(context);
+              context.pop();
             }
           },
           icon: const Icon(Icons.arrow_back),
         ),
         actions: [
+          const Padding(
+            padding: EdgeInsets.only(right: 4),
+            child: AnimatedThemeToggle(),
+          ),
           IconButton(
             onPressed: () => provider.refreshData(),
             icon: const Icon(Icons.refresh),
+            tooltip: 'Actualizar datos',
           ),
         ],
       ),

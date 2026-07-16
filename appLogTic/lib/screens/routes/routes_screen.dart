@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart' hide RouteData;
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:geolocator/geolocator.dart';
@@ -8,11 +9,9 @@ import '../../utils/pair.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/odoo_provider.dart';
 import '../../providers/route_provider.dart';
-import '../admin/driver_monitor_screen.dart';
-import '../admin/user_management_screen.dart';
-import '../dashboard/dashboard_screen.dart';
 import './widgets/photo_capture_dialog.dart';
 import './widgets/incomplete_reason_dialog.dart';
+import '../../widgets/theme_toggle_button.dart';
 
 class RoutesScreen extends StatefulWidget {
   const RoutesScreen({super.key});
@@ -33,9 +32,6 @@ class _RoutesScreenState extends State<RoutesScreen> {
       final driverId = auth.currentUser?.driverId;
       if (driverId != null && driverId > 0) {
         odoo.syncRoutesFromOdoo(driverId).then((routes) {
-          if (routes.isNotEmpty) {
-            routeProvider.setRoutesFromOdoo(routes);
-          }
         });
       }
     });
@@ -61,30 +57,18 @@ class _RoutesScreenState extends State<RoutesScreen> {
               final driverId = auth.currentUser?.driverId;
               if (driverId != null) {
                 odoo.syncRoutesFromOdoo(driverId).then((routes) {
-                  if (routes.isNotEmpty) {
-                    context.read<RouteProvider>().setRoutesFromOdoo(routes);
-                  }
                 });
               }
             },
             onLogout: () {
               auth.logout();
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const DashboardScreen()),
-                (route) => false,
-              );
+              context.go('/login');
             },
             onMonitor: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const DriverMonitorScreen()),
-              );
+              context.push('/admin/monitor');
             },
             onUsers: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const UserManagementScreen()),
-              );
+              context.push('/admin/users');
             },
           ),
           _StatsCardsRow(odoo: odoo),
@@ -166,6 +150,10 @@ class _RoutesHeader extends StatelessWidget {
                         ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white))
                         : const Icon(Icons.sync, color: AppColors.white),
                   ),
+                const Padding(
+                  padding: EdgeInsets.only(right: 2),
+                  child: AnimatedThemeToggle(),
+                ),
                 IconButton(onPressed: onLogout, icon: const Icon(Icons.exit_to_app, color: AppColors.white)),
               ],
             ),
@@ -236,7 +224,7 @@ class _StatsCardsRow extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             _StatCardItem(icon: Icons.list_alt, value: '$total', label: 'Pendientes', iconColor: AppColors.corpLightBlue),
-            Container(height: 50, width: 1, color: AppColors.white24),
+            Container(height: 50, width: 1, color:            AppColors.white24),
             _StatCardItem(icon: Icons.local_shipping, value: '$inProgress', label: 'En Curso', iconColor: AppColors.corpGold),
             Container(height: 50, width: 1, color: AppColors.white24),
             _StatCardItem(icon: Icons.check_circle, value: '$completed', label: 'Completadas', iconColor: AppColors.statusCompleted),
@@ -667,7 +655,9 @@ class _RouteActivityCardState extends State<_RouteActivityCard> {
         ? Uri.encodeComponent(widget.line.street!)
         : '${widget.line.latitude ?? 0.0},${widget.line.longitude ?? 0.0}';
     final url = 'https://www.google.com/maps/dir/?api=1&destination=$destination&travelmode=driving';
-    if (await canLaunchUrl(Uri.parse(url))) await launchUrl(Uri.parse(url));
+    if (await canLaunchUrl(Uri.parse(url))) {
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    }
   }
 
   void _showPhotoDialog(BuildContext context) {

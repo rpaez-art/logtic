@@ -13,3 +13,16 @@
 .externalNativeBuild
 .cxx
 local.properties
+appLogTic/.dart_tool/*
+appLogTic/.dart_tool/
+
+appLogTic/.dart_tool
+
+appLogTic/android
+
+appLogTic/android/
+
+appLogTic/build
+out/
+appLogTic/.dart_tool/
+.freebuff/

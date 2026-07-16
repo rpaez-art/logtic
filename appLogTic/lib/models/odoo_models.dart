@@ -135,6 +135,30 @@ class RouteData {
           [],
     );
   }
+
+  RouteData copyWith({
+    int? id,
+    String? name,
+    DriverInfo? Function()? driverId,
+    String? state,
+    String? maxPriority,
+    String? date,
+    String? startDate,
+    String? endDate,
+    List<RouteLineData>? routeLines,
+  }) {
+    return RouteData(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      driverId: driverId != null ? driverId() : this.driverId,
+      state: state ?? this.state,
+      maxPriority: maxPriority ?? this.maxPriority,
+      date: date ?? this.date,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      routeLines: routeLines ?? this.routeLines,
+    );
+  }
 }
 
 class DriverInfo {
@@ -225,6 +249,54 @@ class RouteLineData {
           .toList(),
       incompleteReason: json['incomplete_reason'],
       incompleteNotes: json['incomplete_notes'],
+    );
+  }
+
+  RouteLineData copyWith({
+    int? id,
+    PartnerInfo? partnerId,
+    String? street,
+    String? city,
+    double? latitude,
+    double? longitude,
+    int? sequence,
+    String? notes,
+    String? obra,
+    String? priority,
+    String? state,
+    String? scheduledTime,
+    String? startTime,
+    String? pickupTime,
+    String? endTime,
+    String? orderType,
+    String? orderName,
+    List<OrderLineData>? orderLines,
+    List<AttachmentData>? attachments,
+    String? incompleteReason,
+    String? incompleteNotes,
+  }) {
+    return RouteLineData(
+      id: id ?? this.id,
+      partnerId: partnerId ?? this.partnerId,
+      street: street ?? this.street,
+      city: city ?? this.city,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      sequence: sequence ?? this.sequence,
+      notes: notes ?? this.notes,
+      obra: obra ?? this.obra,
+      priority: priority ?? this.priority,
+      state: state ?? this.state,
+      scheduledTime: scheduledTime ?? this.scheduledTime,
+      startTime: startTime ?? this.startTime,
+      pickupTime: pickupTime ?? this.pickupTime,
+      endTime: endTime ?? this.endTime,
+      orderType: orderType ?? this.orderType,
+      orderName: orderName ?? this.orderName,
+      orderLines: orderLines ?? this.orderLines,
+      attachments: attachments ?? this.attachments,
+      incompleteReason: incompleteReason ?? this.incompleteReason,
+      incompleteNotes: incompleteNotes ?? this.incompleteNotes,
     );
   }
 }

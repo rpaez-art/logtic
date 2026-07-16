@@ -5,6 +5,18 @@ set "DIR=%~dp0"
 set "APP_DIR=%DIR%appLogTic"
 set "OUT_DIR=%DIR%out"
 
+:: Configurar JAVA_HOME con la ultima version de OpenJDK (Temurin 21)
+if not defined JAVA_HOME (
+    if exist "C:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot\bin\java.exe" (
+        set "JAVA_HOME=C:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot"
+    ) else if exist "%LOCALAPPDATA%\Eclipse Adoptium\jdk-21.0.11.10-hotspot\bin\java.exe" (
+        set "JAVA_HOME=%LOCALAPPDATA%\Eclipse Adoptium\jdk-21.0.11.10-hotspot"
+    )
+)
+if defined JAVA_HOME (
+    set "PATH=%JAVA_HOME%\bin;%PATH%"
+    echo [+] JAVA_HOME: %JAVA_HOME%
+)
 echo =====================================
 echo [*] Construyendo appLogTic (APK Debug)
 echo =====================================

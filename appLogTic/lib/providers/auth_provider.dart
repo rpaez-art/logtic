@@ -16,6 +16,7 @@ class AuthProvider extends ChangeNotifier {
   String _errorMessage = '';
   String _username = '';
   String _password = '';
+  String? _pendingDeepLink;
 
   User? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
@@ -23,6 +24,17 @@ class AuthProvider extends ChangeNotifier {
   String get errorMessage => _errorMessage;
   String get username => _username;
   String get password => _password;
+  String? get pendingDeepLink => _pendingDeepLink;
+
+  void setPendingDeepLink(String route) {
+    _pendingDeepLink = route;
+  }
+
+  String? consumePendingDeepLink() {
+    final link = _pendingDeepLink;
+    _pendingDeepLink = null;
+    return link;
+  }
 
   void updateUsername(String value) {
     _username = value;
@@ -63,7 +75,8 @@ class AuthProvider extends ChangeNotifier {
           );
           _isLoggedIn = true;
 
-          await _client._cookieManager.restoreCookies();
+          await _client.restoreSession();
+          // Cookies restored by the client session
           _registerFcmToken(savedDriverId, savedUsername);
         } else {
           await prefs.clear();

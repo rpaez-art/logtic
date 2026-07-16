@@ -1,8 +1,8 @@
-import 'dart:math';
 import 'package:flutter/foundation.dart';
-import '../config/app_config.dart';
 import '../models/odoo_models.dart';
+import '../models/route.dart';
 import '../services/api/retrofit_client.dart';
+import '../services/route_cache_service.dart';
 
 class OdooProvider extends ChangeNotifier {
   final RetrofitClient _client = RetrofitClient();
@@ -35,6 +35,9 @@ class OdooProvider extends ChangeNotifier {
   String get lastSyncTime => _lastSyncTime;
   String get debugInfo => _debugInfo;
   List<RouteData> get odooRoutes => _odooRoutes;
+
+  /// Whether the current data was loaded from the local cache (offline mode).
+  bool get isShowingCachedData => !_isConnected && _lastSyncTime == '📦 Offline' && _odooRoutes.isNotEmpty;
   bool get isUploadingImage => _isUploadingImage;
   String get uploadImageError => _uploadImageError;
   bool get uploadImageSuccess => _uploadImageSuccess;
@@ -46,22 +49,52 @@ class OdooProvider extends ChangeNotifier {
   bool get isDownloadingAttachment => _isDownloadingAttachment;
   String get downloadError => _downloadError;
 
-  Future<List<RouteModel>> syncRoutesFromOdoo(int? driverId) async {
-    debugPrint('=== INICIANDO SINCRONIZACIÓN ===');
+  /// Shared helper: convert a `List<RouteData>` (from API or cache) into
+  /// `List<RouteModel>` for the UI layer.
+  List<RouteModel> _buildRouteModels(List<RouteData> routes) {
+    final result = <RouteModel>[];
+    for (final routeData in routes) {
+      for (final line in routeData.routeLines) {
+        result.add(RouteModel(
+          id: line.id,
+          clientName: line.partnerId.name,
+          address: line.street ?? '',
+          city: line.city ?? '',
+          scheduledTime: line.scheduledTime ?? '${line.sequence}° Parada',
+          status: _parseStatus(line.state),
+          latitude: line.latitude ?? 0.0,
+          longitude: line.longitude ?? 0.0,
+          description: line.notes ?? '',
+          startTime: line.startTime,
+          endTime: line.endTime,
+          assignedDriver: routeData.driverId?.name ?? '',
+          odooRouteId: routeData.id,
+          odooLineId: line.id,
+          sequence: line.sequence,
+        ));
+      }
+    }
+    return result;
+  }
+
+  Future<List<RouteModel>> syncRoutesFromOdoo(int? driverId, {bool silent = false}) async {
+    debugPrint('=== ${silent ? "BACKGROUND" : "MANUAL"} SINCRONIZACIÓN ===');
     debugPrint('Driver ID: $driverId');
 
     if (driverId == null || driverId <= 0) {
       _errorMessage = 'Usuario sin conductor asignado (driver_id: $driverId)';
       _isConnected = false;
-      _isLoading = false;
+      if (!silent) _isLoading = false;
       notifyListeners();
       return [];
     }
 
-    _isLoading = true;
-    _errorMessage = '';
-    _debugInfo = 'Enviando request...';
-    notifyListeners();
+    if (!silent) {
+      _isLoading = true;
+      _errorMessage = '';
+      _debugInfo = 'Enviando request...';
+      notifyListeners();
+    }
 
     try {
       final routeDataList = await _client.syncTodayRoutes(driver: driverId.toString());
@@ -69,40 +102,47 @@ class OdooProvider extends ChangeNotifier {
 
       _odooRoutes = routeDataList;
       _errorMessage = '';
+      _isConnected = true;
 
-      final routes = <RouteModel>[];
+      final sortedRouteDataList = <RouteData>[];
       for (final routeData in routeDataList) {
-        for (final line in routeData.routeLines) {
-          routes.add(RouteModel(
-            id: line.id,
-            clientName: line.partnerId.name,
-            address: line.street ?? '',
-            city: line.city ?? '',
-            scheduledTime: line.scheduledTime ?? '${line.sequence}° Parada',
-            status: _parseStatus(line.state),
-            latitude: line.latitude ?? 0.0,
-            longitude: line.longitude ?? 0.0,
-            description: line.notes ?? '',
-            startTime: line.startTime,
-            endTime: line.endTime,
-            assignedDriver: routeData.driverId?.name ?? '',
-            odooRouteId: routeData.id,
-            odooLineId: line.id,
-            sequence: line.sequence,
-          ));
-        }
+        final sortedLines = List<RouteLineData>.from(routeData.routeLines);
+        sortedLines.sort((a, b) => a.sequence.compareTo(b.sequence));
+        sortedRouteDataList.add(routeData.copyWith(routeLines: sortedLines));
       }
+      
+      // Cache the fresh data locally for offline access
+      await RouteCacheService.instance.cacheRoutes(driverId, sortedRouteDataList);
 
+      final routes = _buildRouteModels(sortedRouteDataList);
       _lastSyncTime = DateTime.now().toString().substring(11, 19);
       _isLoading = false;
-      _isConnected = true;
       _debugInfo = '✅ ${routes.length} rutas cargadas';
       notifyListeners();
 
-      routes.sort((a, b) => a.sequence.compareTo(b.sequence));
       return routes;
     } catch (e) {
-      _errorMessage = 'Error: ${e.toString()}';
+      debugPrint('❌ Sync failed, trying cache: $e');
+      _isConnected = false;
+
+      // Attempt to load from local cache
+      final cachedRoutes = await RouteCacheService.instance.getCachedRoutes(driverId);
+      if (cachedRoutes.isNotEmpty) {
+        _odooRoutes = cachedRoutes;
+        final routes = _buildRouteModels(cachedRoutes);
+
+        _lastSyncTime = '📦 Offline';
+        _isLoading = false;
+        _errorMessage = '';
+        _debugInfo = '📦 ${routes.length} rutas desde caché offline';
+        notifyListeners();
+
+        routes.sort((a, b) => a.sequence.compareTo(b.sequence));
+        return routes;
+      }
+
+      // No cache available either
+      _errorMessage = 'Sin conexión y sin datos en caché';
       _isLoading = false;
       _debugInfo = '❌ ERROR: ${e.toString()}';
       notifyListeners();
@@ -398,7 +438,7 @@ class OdooProvider extends ChangeNotifier {
       _downloadError = '';
       notifyListeners();
 
-      final response = await _client.getLineAttachments(attachmentId);
+      await _client.getLineAttachments(attachmentId);
       // Simplified - real download would need getAttachment endpoint
       _isDownloadingAttachment = false;
       notifyListeners();
