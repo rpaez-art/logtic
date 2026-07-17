@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../config/theme.dart';
 import '../../models/odoo_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/odoo_provider.dart';
 import '../../widgets/theme_toggle_button.dart';
 import '../../widgets/attachment_tile.dart';
+
 class RouteHistoryScreen extends StatefulWidget {
   const RouteHistoryScreen({super.key});
 
@@ -102,7 +104,7 @@ class _RouteHistoryScreenState extends State<RouteHistoryScreen> {
               ),
               SliverList(
                 delegate: SliverChildBuilderDelegate(
-                  (context, index) => _HistoryDetailCard(item: routes[index]),
+                  (context, index) => _HistoryRouteCard(item: routes[index]),
                   childCount: routes.length,
                 ),
               ),
@@ -195,22 +197,22 @@ class _HistoryStat extends StatelessWidget {
   }
 }
 
-class _HistoryDetailCard extends StatefulWidget {
+/// Route-level card matching the style of _ExpandableRouteCard from routes_screen.dart
+class _HistoryRouteCard extends StatefulWidget {
   final RouteHistoryItem item;
 
-  const _HistoryDetailCard({required this.item});
+  const _HistoryRouteCard({required this.item});
 
   @override
-  State<_HistoryDetailCard> createState() => _HistoryDetailCardState();
+  State<_HistoryRouteCard> createState() => _HistoryRouteCardState();
 }
 
-class _HistoryDetailCardState extends State<_HistoryDetailCard> {
+class _HistoryRouteCardState extends State<_HistoryRouteCard> {
   bool _isExpanded = false;
 
   @override
   Widget build(BuildContext context) {
     final odoo = context.watch<OdooProvider>();
-    // Get fresh item from provider so it updates when lines are fetched
     final historyList = odoo.routesHistory;
     final index = historyList.indexWhere((h) => h.id == widget.item.id);
     final item = index >= 0 ? historyList[index] : widget.item;
@@ -224,9 +226,9 @@ class _HistoryDetailCardState extends State<_HistoryDetailCard> {
     final hasDocs = hasLines && item.lines!.any((l) => l.attachments != null && l.attachments!.isNotEmpty);
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         side: hasDocs ? BorderSide(color: AppColors.accent.withValues(alpha: 0.3), width: 1) : BorderSide.none,
       ),
       child: Column(
@@ -240,71 +242,71 @@ class _HistoryDetailCardState extends State<_HistoryDetailCard> {
                 setState(() => _isExpanded = true);
               }
             },
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Main row
+                  // Header row: icon + name + duration + completed/total
+                  Row(children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.route, color: AppColors.primary, size: 20),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        item.name,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          item.durationFormatted,
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.corpGreen),
+                        ),
+                        Text(
+                          '${item.completedDeliveries}/${item.totalDeliveries}',
+                          style: const TextStyle(fontSize: 12, color: AppColors.gray500),
+                        ),
+                      ],
+                    ),
+                  ]),
+                  const SizedBox(height: 6),
+                  // Date row
                   Row(
                     children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: completionRate >= 100
-                              ? AppColors.statusCompleted.withValues(alpha: 0.1)
-                              : AppColors.secondary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          completionRate >= 100 ? Icons.check_circle : Icons.remove_circle_outlined,
-                          color: completionRate >= 100 ? AppColors.statusCompleted : AppColors.secondary,
-                          size: 28,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
+                      const Icon(Icons.calendar_today, size: 14, color: AppColors.gray500),
+                      const SizedBox(width: 4),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item.name,
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 2),
-                            Row(
-                              children: [
-                                const Icon(Icons.calendar_today, size: 14, color: AppColors.gray500),
-                                const SizedBox(width: 4),
-                                Text(
-                                  item.date,
-                                  style: const TextStyle(fontSize: 12, color: AppColors.gray500),
-                                ),
-                              ],
-                            ),
-                          ],
+                        child: Text(
+                          item.date,
+                          style: const TextStyle(fontSize: 12, color: AppColors.gray500),
                         ),
                       ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            item.durationFormatted,
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.corpGreen),
-                          ),
-                          Text(
-                            '${item.completedDeliveries}/${item.totalDeliveries}',
-                            style: const TextStyle(fontSize: 12, color: AppColors.gray500),
-                          ),
-                        ],
+                      // Expand icon
+                      AnimatedRotation(
+                        turns: _isExpanded ? 0.5 : 0.0,
+                        duration: const Duration(milliseconds: 200),
+                        child: Icon(
+                          Icons.keyboard_arrow_down,
+                          size: 20,
+                          color: AppColors.primary,
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
+                  // Progress bar
                   Row(
                     children: [
                       Expanded(
@@ -328,8 +330,7 @@ class _HistoryDetailCardState extends State<_HistoryDetailCard> {
                       ),
                     ],
                   ),
-
-                  // Expand indicator & status row
+                  // Bottom row: docs badge / loading / deliveries count
                   const SizedBox(height: 10),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -370,25 +371,11 @@ class _HistoryDetailCardState extends State<_HistoryDetailCard> {
                         )
                       else
                         const SizedBox.shrink(),
-                      Row(
-                        children: [
-                          Text(
-                            hasLines
-                                ? '${item.lines!.length} entregas'
-                                : 'Ver entregas',
-                            style: const TextStyle(fontSize: 11, color: AppColors.gray500),
-                          ),
-                          const SizedBox(width: 4),
-                          AnimatedRotation(
-                            turns: _isExpanded ? 0.5 : 0.0,
-                            duration: const Duration(milliseconds: 200),
-                            child: Icon(
-                              Icons.keyboard_arrow_down,
-                              size: 20,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ],
+                      Text(
+                        hasLines
+                            ? '${item.lines!.length} entregas'
+                            : 'Ver entregas',
+                        style: const TextStyle(fontSize: 11, color: AppColors.gray500),
                       ),
                     ],
                   ),
@@ -396,17 +383,17 @@ class _HistoryDetailCardState extends State<_HistoryDetailCard> {
               ),
             ),
           ),
-
-          // Expanded delivery lines or loading state
+          // Expanded delivery lines
           if (_isExpanded)
             Container(
               decoration: BoxDecoration(
-                color: AppColors.gray50.withValues(alpha: 0.7),
+                color: AppColors.gray100,
                 borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(16),
-                  bottomRight: Radius.circular(16),
+                  bottomLeft: Radius.circular(20),
+                  bottomRight: Radius.circular(20),
                 ),
               ),
+              padding: const EdgeInsets.all(12),
               child: isLoading
                   ? const Padding(
                       padding: EdgeInsets.all(24),
@@ -429,7 +416,10 @@ class _HistoryDetailCardState extends State<_HistoryDetailCard> {
                   : hasLines
                       ? Column(
                           children: item.lines!
-                              .map((line) => _HistoryLineCard(line: line))
+                              .map((line) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 10),
+                                    child: _HistoryLineCard(line: line),
+                                  ))
                               .toList(),
                         )
                       : item.lines != null
@@ -450,8 +440,7 @@ class _HistoryDetailCardState extends State<_HistoryDetailCard> {
   }
 }
 
-/// Widget for each delivery line within a history route
-/// Matches the style of _RouteActivityCard from routes_screen.dart
+/// Delivery line card matching the style of _RouteActivityCard from routes_screen.dart
 class _HistoryLineCard extends StatefulWidget {
   final RouteLineData line;
 
@@ -476,7 +465,7 @@ class _HistoryLineCardState extends State<_HistoryLineCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Partner & state
+            // Partner & state badge
             Row(children: [
               Container(
                 width: 40, height: 40,
@@ -501,6 +490,7 @@ class _HistoryLineCardState extends State<_HistoryLineCard> {
                 child: Text(_getStateLabel(line.state), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: stateColor)),
               ),
             ]),
+            // Address
             if (line.street != null && line.street!.isNotEmpty) ...[
               const SizedBox(height: 10),
               Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -516,6 +506,7 @@ class _HistoryLineCardState extends State<_HistoryLineCard> {
                 )),
               ]),
             ],
+            // Notes
             if (line.notes != null && line.notes!.isNotEmpty) ...[
               const SizedBox(height: 8),
               Container(
@@ -525,7 +516,6 @@ class _HistoryLineCardState extends State<_HistoryLineCard> {
                 child: Text(_parseHtml(line.notes!), style: const TextStyle(fontSize: 13)),
               ),
             ],
-
             // Incomplete reason
             if (line.incompleteReason != null && line.incompleteReason!.isNotEmpty) ...[
               const SizedBox(height: 8),
@@ -550,15 +540,16 @@ class _HistoryLineCardState extends State<_HistoryLineCard> {
                 ),
               ),
             ],
-
+            // Time chips
             if (line.startTime != null || line.pickupTime != null || line.endTime != null) ...[
               const SizedBox(height: 8),
-              Row(children: [
-                if (line.startTime != null) _HTimeChip(icon: Icons.play_arrow, time: _formatTime(line.startTime!), color: AppColors.statusInProgress),
-                if (line.pickupTime != null) _HTimeChip(icon: Icons.local_shipping, time: _formatTime(line.pickupTime!), color: AppColors.statusPickedUp),
-                if (line.endTime != null) _HTimeChip(icon: Icons.check_circle, time: _formatTime(line.endTime!), color: AppColors.statusCompleted),
+              Wrap(spacing: 8, runSpacing: 4, children: [
+                if (line.startTime != null) _TimeChip(icon: Icons.play_arrow, time: _formatTime(line.startTime!), color: AppColors.statusInProgress),
+                if (line.pickupTime != null) _TimeChip(icon: Icons.local_shipping, time: _formatTime(line.pickupTime!), color: AppColors.statusPickedUp),
+                if (line.endTime != null) _TimeChip(icon: Icons.check_circle, time: _formatTime(line.endTime!), color: AppColors.statusCompleted),
               ]),
             ],
+            // Products (order lines)
             if (line.orderLines != null && line.orderLines!.isNotEmpty) ...[
               const SizedBox(height: 10),
               InkWell(
@@ -593,15 +584,46 @@ class _HistoryLineCardState extends State<_HistoryLineCard> {
                   ),
                 ),
             ],
-            // Documents section (grouped by type)
+            // Documents (attachments)
             if (hasAttachments) ...[
               const SizedBox(height: 10),
               AttachmentsGrouped(attachments: line.attachments!),
             ],
+            // Navigate button (like routes_screen _RouteActivityCard)
+            const SizedBox(height: 12),
+            Row(children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _navigate(line),
+                  icon: const Icon(Icons.navigation, size: 18),
+                  label: const Text('Navegar', style: TextStyle(fontSize: 13)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.accent,
+                    foregroundColor: AppColors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+            ]),
           ],
         ),
       ),
     );
+  }
+
+  void _navigate(RouteLineData line) async {
+    final destination = line.street != null && line.street!.isNotEmpty
+        ? Uri.encodeComponent(line.street!)
+        : '${line.latitude ?? 0.0},${line.longitude ?? 0.0}';
+    final url = 'https://www.google.com/maps/dir/?api=1&destination=$destination&travelmode=driving';
+    final uri = Uri.tryParse(url);
+    if (uri != null && await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo abrir Google Maps')),
+      );
+    }
   }
 
   Color _getStateColor(String state) {
@@ -652,17 +674,18 @@ class _HistoryLineCardState extends State<_HistoryLineCard> {
   }
 }
 
-class _HTimeChip extends StatelessWidget {
+/// Same time chip widget used in routes_screen _RouteActivityCard
+class _TimeChip extends StatelessWidget {
   final IconData icon;
   final String time;
   final Color color;
 
-  const _HTimeChip({required this.icon, required this.time, required this.color});
+  const _TimeChip({required this.icon, required this.time, required this.color});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(right: 12),
+      margin: const EdgeInsets.only(right: 4),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),

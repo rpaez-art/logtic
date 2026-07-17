@@ -21,22 +21,8 @@ echo =====================================
 echo [*] Construyendo appLogTic (APK Debug)
 echo =====================================
 
-:: Preparar entorno virtual (Flutter SDK temporal si no existe)
-set "FLUTTER_CMD=flutter"
-where flutter >nul 2>nul
-if %ERRORLEVEL% neq 0 (
-    echo [!] flutter no esta instalado en el PATH. Preparando entorno temporal...
-    if not exist "%TEMP%\flutter" (
-        echo [*] Descargando Flutter SDK ^(stable^)...
-        git clone https://github.com/flutter/flutter.git -b stable "%TEMP%\flutter"
-    )
-    set "PATH=%PATH%;%TEMP%\flutter\bin"
-    set "FLUTTER_CMD=%TEMP%\flutter\bin\flutter.bat"
-    echo [+] Usando Flutter SDK en !FLUTTER_CMD!
-    
-    :: Precache flutter artifacts
-    call !FLUTTER_CMD! precache --android
-)
+set "FLUTTER_CMD=C:\Users\r.paez\flutter\bin\flutter.bat"
+echo [+] Usando Flutter SDK local: !FLUTTER_CMD!
 
 :: Limpieza y preparación de la carpeta de salida
 if exist "%OUT_DIR%" rmdir /S /Q "%OUT_DIR%"

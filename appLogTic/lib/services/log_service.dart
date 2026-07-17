@@ -72,11 +72,9 @@ class LogService {
   static const int _ringSize = 500;
 
   final List<LogEntry> _logs = [];
-  LogLevel _minLevel = LogLevel.debug;
-
+  
   /// Minimum level to record. Entries below this are discarded.
-  LogLevel get minLevel => _minLevel;
-  set minLevel(LogLevel level) => _minLevel = level;
+  LogLevel minLevel = LogLevel.debug;
 
   File? _logFile;
   bool _fileLoggingEnabled = false;
@@ -146,7 +144,7 @@ class LogService {
   // ── Core logging ──
 
   void _log(LogLevel level, String tag, String message) {
-    if (level.priority < _minLevel.priority) return;
+    if (level.priority < minLevel.priority) return;
 
     final entry = LogEntry(
       timestamp: DateTime.now(),

@@ -112,7 +112,7 @@ class _IncompleteReasonDialogState extends State<IncompleteReasonDialog> {
             const Text('Motivo', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              value: _selectedReason.isEmpty ? null : _selectedReason,
+              initialValue: _selectedReason.isEmpty ? null : _selectedReason,
               hint: const Text('Seleccione un motivo'),
               decoration: InputDecoration(
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

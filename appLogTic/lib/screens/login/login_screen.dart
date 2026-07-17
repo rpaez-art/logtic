@@ -319,13 +319,12 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                         : () async {
                                             if (!_formKey.currentState!.validate()) return;
                                             final success = await auth.login();
-                                            if (success && mounted) {
-                                              final pending = auth.consumePendingDeepLink();
-                                              if (pending != null) {
-                                                context.go(pending);
-                                              } else {
-                                                context.go('/dashboard');
-                                              }
+                                            if (success) {
+                                              if (mounted) {
+                                                final pending = auth.consumePendingDeepLink();
+                                                final destination = pending ?? '/dashboard';
+                                                // ignore: use_build_context_synchronously
+                                                context.go(destination);
                                             } else if (!success && mounted) {
                                               _triggerShake();
                                             }

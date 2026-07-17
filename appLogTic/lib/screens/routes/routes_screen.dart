@@ -8,7 +8,6 @@ import '../../models/odoo_models.dart';
 import '../../utils/pair.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/odoo_provider.dart';
-import '../../providers/route_provider.dart';
 import './widgets/photo_capture_dialog.dart';
 import './widgets/incomplete_reason_dialog.dart';
 import '../../widgets/theme_toggle_button.dart';
@@ -28,7 +27,6 @@ class _RoutesScreenState extends State<RoutesScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = context.read<AuthProvider>();
       final odoo = context.read<OdooProvider>();
-      final routeProvider = context.read<RouteProvider>();
       
       final driverId = auth.currentUser?.driverId;
       if (driverId != null && driverId > 0) {
