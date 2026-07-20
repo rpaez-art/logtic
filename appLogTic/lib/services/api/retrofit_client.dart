@@ -256,6 +256,27 @@ class RetrofitClient {
     return LineAttachmentsResponse.fromJson(jsonDecode(response.body));
   }
 
+  /// Fetch individual attachment metadata + base64 content via /api/attachment/{id}?format=json
+  Future<AttachmentData?> getAttachmentContent(int attachmentId) async {
+    final response = await _request('GET', '${AppConfig.apiAttachment}/$attachmentId', queryParams: {
+      'format': 'json',
+    });
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+      if (json['success'] == true && json['data'] != null) {
+        return AttachmentData.fromJson(json['data']);
+      }
+    }
+    return null;
+  }
+
+  /// Download individual attachment as raw file via /api/attachment/{id}?format=download
+  Future<http.Response> downloadAttachmentFile(int attachmentId) async {
+    return await _request('GET', '${AppConfig.apiAttachment}/$attachmentId', queryParams: {
+      'format': 'download',
+    });
+  }
+
   // Clear session
   Future<void> clearSession() async {
     _baseUrl = AppConfig.odooBaseUrl;

@@ -31,6 +31,9 @@ class OdooProvider extends ChangeNotifier {
   bool _isDownloadingAttachment = false;
   String _downloadError = '';
 
+  /// Cached attachment contents by attachment ID (base64 data)
+  final Map<int, AttachmentData> _attachmentCache = {};
+
   // Getters
   bool get isConnected => _isConnected;
   bool get isLoading => _isLoading;
@@ -52,6 +55,7 @@ class OdooProvider extends ChangeNotifier {
   bool isHistoryLineLoading(int routeId) => _loadingHistoryLineIds.contains(routeId);
   bool get isDownloadingAttachment => _isDownloadingAttachment;
   String get downloadError => _downloadError;
+  AttachmentData? getCachedAttachment(int id) => _attachmentCache[id];
 
   /// Shared helper: convert a `List<RouteData>` (from API or cache) into
   /// `List<RouteModel>` for the UI layer.
@@ -451,24 +455,41 @@ class OdooProvider extends ChangeNotifier {
     }
   }
 
+  void clearAttachmentCache() {
+    _attachmentCache.clear();
+    notifyListeners();
+  }
+
   LocalStats getLocalStats() {
     return LocalStats(); // Simplified - will calculate in UI
   }
 
-  void downloadAttachment(
+  void fetchAttachmentContent(
     int attachmentId, {
-    required Function(String base64, String filename, String mimetype) onSuccess,
+    required Function(AttachmentData data) onSuccess,
     required Function(String error) onError,
   }) async {
+    if (_attachmentCache.containsKey(attachmentId)) {
+      onSuccess(_attachmentCache[attachmentId]!);
+      return;
+    }
     try {
       _isDownloadingAttachment = true;
       _downloadError = '';
       notifyListeners();
 
-      await _client.getLineAttachments(attachmentId);
-      // Simplified - real download would need getAttachment endpoint
-      _isDownloadingAttachment = false;
-      notifyListeners();
+      final attachment = await _client.getAttachmentContent(attachmentId);
+      if (attachment != null) {
+        _attachmentCache[attachmentId] = attachment;
+        _isDownloadingAttachment = false;
+        notifyListeners();
+        onSuccess(attachment);
+      } else {
+        _downloadError = 'Attachment not found';
+        _isDownloadingAttachment = false;
+        onError('Attachment not found');
+        notifyListeners();
+      }
     } catch (e) {
       _downloadError = e.toString();
       _isDownloadingAttachment = false;

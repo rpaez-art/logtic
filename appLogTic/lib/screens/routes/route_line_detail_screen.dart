@@ -5,6 +5,7 @@ import '../../config/theme.dart';
 import '../../models/odoo_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/odoo_provider.dart';
+import '../../widgets/attachment_tile.dart';
 
 class RouteLineDetailScreen extends StatefulWidget {
   final int lineId;
@@ -222,6 +223,18 @@ class _RouteLineDetailScreenState extends State<RouteLineDetailScreen> {
               )).toList(),
             ),
           if (line.orderLines != null && line.orderLines!.isNotEmpty)
+            const SizedBox(height: 12),
+
+          // Attachments/Documents
+          if (line.attachments != null && line.attachments!.isNotEmpty)
+            _InfoCard(
+              icon: Icons.description,
+              title: 'Documentos (${line.attachments!.length})',
+              children: [
+                AttachmentsGrouped(attachments: line.attachments!),
+              ],
+            ),
+          if (line.attachments != null && line.attachments!.isNotEmpty)
             const SizedBox(height: 12),
 
           // Times
