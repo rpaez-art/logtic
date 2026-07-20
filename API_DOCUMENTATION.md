@@ -1,475 +1,697 @@
-# API Documentation - LogTic
+# 📡 Documentación Oficial de la API REST — LogTic 🚚
 
-> Documentación de los endpoints de la API REST de Odoo utilizados por LogTic.
-> Base URL: `https://etc-corpocrea.odoo.com/`
+> **Servidor:** `https://etc-corpocrea.odoo.com/`
+> **Base de datos:** `etc-corpocrea`
+> **Autenticación:** Basada en cookies de sesión (`session_id`)
+> **Formato:** JSON (`Content-Type: application/json`)
 
 ---
 
-## Autenticación
+## 🔐 Autenticación
 
 ### `POST /api/auth/login`
-Iniciar sesión y obtener sesión de Odoo.
 
-**Request Body:**
+Inicia sesión y devuelve una cookie `session_id` para autenticar requests subsiguientes.
+
+#### Request
+
 ```json
 {
-  "username": "string",
-  "password": "string"
+  "username": "rafaelpaez",
+  "password": "rafaelpaez"
 }
 ```
 
-**Response (`LoginResponse`):**
+> **⚠️ Nota importante:** El endpoint acepta `username`/`password`. NO usa `login`/`db` como el login estándar de Odoo. Si envías `db`, devuelve error:`"Usuario y contraseña son requeridos"`.
+
+#### Response (200 OK)
+
 ```json
 {
   "success": true,
-  "message": "Login exitoso",
   "data": {
-    "username": "string",
-    "uid": 123,
-    "session_id": "string",
-    "full_name": "Nombre Completo",
-    "role": "driver | admin",
-    "driver_code": "COD001",
-    "driver_id": 1,
-    "driver_name": "Nombre Conductor"
+    "uid": "62b819f5ebc39808c691f32fcd70ef92818a7444",
+    "session_id": "62b819f5ebc39808c691f32fcd70ef92818a7444",
+    "username": "rafaelpaez",
+    "full_name": "Rafael Paez",
+    "role": "driver",
+    "driver_code": "DRV009",
+    "driver_id": 20173,
+    "driver_name": "MILANO AGUILAR GUSTAVO RAFAEL"
   }
 }
 ```
 
+#### Headers relevantes
+
+```
+Set-Cookie: session_id=62b819f5ebc39808c691f32fcd70ef92818a7444; Expires=Mon, 27 Jul 2026 14:00:51 GMT; Max-Age=604800; HttpOnly; Path=/; Secure; SameSite=Lax
+Server: Odoo.sh
+Strict-Transport-security: max-age=31536000; includeSubDomains
+```
+
+#### cURL
+
+```bash
+curl -X POST https://etc-corpocrea.odoo.com/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"rafaelpaez","password":"rafaelpaez"}'
+```
+
 ---
 
-## Rutas / Entregas
+## 📋 Rutas
 
-### `GET /api/routes/sync?driver={driver_id}`
-Obtener las rutas activas/hoy del conductor (incluye líneas, productos, adjuntos).
+### `GET /api/routes/sync`
 
-**Query Params:**
-| Param | Type | Description |
-|-------|------|-------------|
-| driver | string | ID del conductor |
+Sincroniza las rutas del día para un conductor específico.
 
-**Response:**
+#### Query Params
+
+| Parámetro | Tipo    | Obligatorio | Descripción                          |
+|-----------|---------|-------------|--------------------------------------|
+| `driver`  | string  | No*         | Username o ID del conductor          |
+
+> Si no se envía `driver`, trae todas las rutas del día.
+
+#### Request
+
+```bash
+curl "https://etc-corpocrea.odoo.com/api/routes/sync?driver=rafaelpaez" \
+  -H "Cookie: session_id=..."
+```
+
+#### Response (cuando hay rutas ese día)
+
 ```json
 {
   "success": true,
   "data": [
     {
-      "id": 123,
-      "name": "RUTA-001",
+      "id": 886,
+      "name": "RUTA000882",
       "driver_id": {
-        "id": 1,
-        "name": "Conductor"
+        "id": 20173,
+        "name": "MILANO AGUILAR GUSTAVO RAFAEL"
       },
-      "state": "started | finished | draft",
-      "max_priority": "normal | urgent",
-      "date": "2026-07-16",
-      "start_date": "2026-07-16 08:00:00",
-      "end_date": "2026-07-16 17:00:00",
+      "state": "finished",
+      "date": "2026-07-17",
       "route_lines": [
         {
-          "id": 456,
-          "partner_id": { "id": 789, "name": "Cliente XYZ" },
-          "street": "Av. Principal 123",
-          "city": "Caracas",
-          "latitude": 10.4806,
-          "longitude": -66.9036,
-          "sequence": 1,
-          "notes": "Notas <b>HTML</b>",
-          "obra": "Edificio Central",
-          "priority": "normal | urgent",
-          "state": "pending | in_progress | picked_up | done | incomplete | partial | cancelled",
-          "scheduled_time": "2026-07-16 09:00:00",
-          "start_time": "2026-07-16 08:30:00",
-          "pickup_time": "2026-07-16 09:15:00",
-          "end_time": "2026-07-16 09:45:00",
-          "order_type": "sale | transfer",
-          "order_name": "PED-001",
-          "order_lines": [
-            {
-              "product_name": "Producto A",
-              "quantity": 5,
-              "uom": "unidades",
-              "price_unit": 100.00
-            }
-          ],
-          "attachments": [
-            {
-              "id": 999,
-              "name": "Documento.pdf",
-              "filename": "doc.pdf",
-              "mimetype": "application/pdf",
-              "file_size": 102400,
-              "create_date": "2026-07-16 10:00:00",
-              "download_url": "https://etc-corpocrea.odoo.com/..."
-            }
-          ],
-          "incomplete_reason": "Falta firma",
-          "incomplete_notes": "Cliente no estaba presente"
+          "id": 926,
+          "partner_id": {
+            "id": 16878,
+            "name": "DIPLOELCA, C.A."
+          },
+          "street": "BARF CATIA LA MAR",
+          "city": "",
+          "latitude": 0.0,
+          "longitude": 0.0,
+          "sequence": 926,
+          "notes": "",
+          "state": "done",
+          "scheduled_time": "11:32:59"
         }
       ]
     }
-  ]
+  ],
+  "meta": null
 }
 ```
 
-### `GET /api/routes/driver?driver={driver_id}`
-Obtener rutas activas de un conductor (similar a sync, formato alternativo).
+#### Response (sin rutas ese día)
 
-### `POST /api/routes/line/start`
-Iniciar una línea de ruta (marcar como `in_progress`).
-
-**Request Body:**
-```json
-{
-  "line_id": 456,
-  "state": "in_progress",
-  "latitude": 10.4806,
-  "longitude": -66.9036,
-  "timestamp": "2026-07-16 08:30:00"
-}
-```
-
-**Response:**
 ```json
 {
   "success": true,
-  "message": "Línea iniciada"
+  "data": [],
+  "meta": null
 }
 ```
 
-### `POST /api/routes/line/pickup`
-Marcar línea como recogida (`picked_up`).
+---
 
-**Request Body:**
-```json
-{
-  "line_id": 456,
-  "state": "picked_up",
-  "latitude": 10.4806,
-  "longitude": -66.9036,
-  "timestamp": "2026-07-16 09:15:00"
-}
+### `GET /api/routes/{route_id}`
+
+Obtiene el detalle completo de una ruta específica.
+
+#### Request
+
+```bash
+curl "https://etc-corpocrea.odoo.com/api/routes/886" \
+  -H "Cookie: session_id=..."
 ```
 
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Recogida registrada"
-}
-```
+#### Response
 
-### `POST /api/routes/line/complete`
-Completar línea de ruta (`done`).
-
-**Request Body:**
-```json
-{
-  "line_id": 456,
-  "state": "done",
-  "latitude": 10.4806,
-  "longitude": -66.9036,
-  "timestamp": "2026-07-16 09:45:00"
-}
-```
-
-**Response:**
 ```json
 {
   "success": true,
-  "message": "Línea completada"
-}
-```
-
-### `POST /api/routes/line/incomplete`
-Marcar línea como incompleta o parcial.
-
-**Request Body:**
-```json
-{
-  "line_id": 456,
-  "state": "incomplete | partial",
-  "reason": "Firma pendiente",
-  "notes": "Cliente no disponible",
-  "latitude": 10.4806,
-  "longitude": -66.9036,
-  "timestamp": "2026-07-16 09:45:00"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Línea marcada como incompleta"
-}
-```
-
-### `POST /api/routes/line/upload-image`
-Subir imagen como evidencia de entrega.
-
-**Request Body:**
-```json
-{
-  "line_id": 456,
-  "image": "base64_encoded_image_data",
-  "filename": "delivery_456_1234567890.jpg",
-  "notes": "Foto de entrega",
-  "timestamp": "2026-07-16 09:45:00"
-}
-```
-
-**Response (`UploadImageResponse`):**
-```json
-{
-  "success": true,
-  "message": "Imagen subida",
   "data": {
-    "line_id": 456,
-    "filename": "delivery_456_1234567890.jpg",
-    "timestamp": "2026-07-16 09:45:00"
-  }
-}
-```
-
-### `POST /api/routes/state`
-Actualizar estado general de la ruta (no línea individual).
-
-**Request Body:**
-```json
-{
-  "route_id": 123,
-  "state": "started | finished"
-}
-```
-
-### `GET /api/routes/line/attachments/{lineId}`
-Obtener adjuntos de una línea específica.
-
-**Response (`LineAttachmentsResponse`):**
-```json
-{
-  "success": true,
-  "message": null,
-  "data": {
-    "line_id": 456,
-    "count": 2,
-    "attachments": [
+    "id": 886,
+    "name": "RUTA000882",
+    "driver_id": {
+      "id": 20173,
+      "name": "MILANO AGUILAR GUSTAVO RAFAEL"
+    },
+    "state": "finished",
+    "date": "2026-07-17",
+    "route_lines": [
       {
-        "id": 999,
-        "name": "Documento.pdf",
-        "filename": "doc.pdf",
-        "mimetype": "application/pdf",
-        "file_size": 102400,
-        "create_date": "2026-07-16 10:00:00",
-        "download_url": "https://etc-corpocrea.odoo.com/..."
+        "id": 926,
+        "partner_id": {
+          "id": 16878,
+          "name": "DIPLOELCA, C.A."
+        },
+        "street": "BARF CATIA LA MAR",
+        "city": "",
+        "latitude": 0.0,
+        "longitude": 0.0,
+        "sequence": 926,
+        "notes": "",
+        "state": "done",
+        "scheduled_time": "11:32:59"
       }
     ]
   }
 }
 ```
 
-### `GET /api/attachment/{id}`
-Descargar un attachment específico por su ID (binary file stream).
+---
+
+## 📊 Estadísticas del Conductor
+
+### `GET /api/driver/stats`
+
+Obtiene estadísticas detalladas de rendimiento.
+
+#### Query Params
+
+| Parámetro | Tipo    | Obligatorio | Descripción                                      |
+|-----------|---------|-------------|--------------------------------------------------|
+| `driver`  | string  | Sí          | Username o ID del conductor                      |
+| `period`  | string  | No          | `today`, `week`, `month` o `all`. Default: `today` |
+
+#### Request
+
+```bash
+curl "https://etc-corpocrea.odoo.com/api/driver/stats?driver=rafaelpaez&period=month" \
+  -H "Cookie: session_id=..."
+```
+
+#### Response (period=month — con datos reales)
+
+```json
+{
+  "success": true,
+  "data": {
+    "driver": {
+      "id": 20173,
+      "name": "MILANO AGUILAR GUSTAVO RAFAEL",
+      "image": "iVBORw0KGgoA... [base64 image]"
+    },
+    "period": "month",
+    "summary": {
+      "total_routes": 28,
+      "completed_routes": 28,
+      "in_progress_routes": 0,
+      "pending_routes": 0,
+      "total_deliveries": 29,
+      "completed_deliveries": 29,
+      "pending_deliveries": 0,
+      "in_progress_deliveries": 0,
+      "completion_rate": 100.0
+    },
+    "performance": {
+      "avg_delivery_time_minutes": 33.2,
+      "avg_route_time_minutes": 42.1,
+      "avg_delivery_time_formatted": "33m",
+      "avg_route_time_formatted": "42m"
+    },
+    "today": {
+      "total": 0,
+      "completed": 0,
+      "pending": 0,
+      "in_progress": 0
+    }
+  }
+}
+```
+
+#### Response (period=today — sin actividad)
+
+```json
+{
+  "success": true,
+  "data": {
+    "driver": {
+      "id": 20173,
+      "name": "MILANO AGUILAR GUSTAVO RAFAEL",
+      "image": "iVBORw0KGgoA... [base64 image]"
+    },
+    "period": "today",
+    "summary": {
+      "total_routes": 0,
+      "completed_routes": 0,
+      "in_progress_routes": 0,
+      "pending_routes": 0,
+      "total_deliveries": 0,
+      "completed_deliveries": 0,
+      "pending_deliveries": 0,
+      "in_progress_deliveries": 0,
+      "completion_rate": 0
+    },
+    "performance": {
+      "avg_delivery_time_minutes": 0,
+      "avg_route_time_minutes": 0,
+      "avg_delivery_time_formatted": "0m",
+      "avg_route_time_formatted": "0m"
+    },
+    "today": {
+      "total": 0,
+      "completed": 0,
+      "pending": 0,
+      "in_progress": 0
+    }
+  }
+}
+```
+
+> **Nota:** La imagen del conductor viene codificada en base64 dentro del campo `driver.image`.
 
 ---
 
-## Historial
+## 📜 Historial de Rutas
 
-### `GET /api/routes/history?driver={driver_id}&limit={n}&offset={n}`
-Obtener historial de rutas del conductor.
+### `GET /api/routes/history`
 
-**Query Params:**
-| Param | Type | Default | Description |
-|-------|------|---------|-------------|
-| driver | string | — | ID del conductor |
-| limit | int | 20 | Cantidad máxima de resultados |
-| offset | int | 0 | Paginación |
+Obtiene el historial paginado de rutas completadas.
 
-**Response (`RoutesHistoryResponse`):**
+#### Query Params
+
+| Parámetro | Tipo   | Obligatorio | Descripción                         |
+|-----------|--------|-------------|-------------------------------------|
+| `driver`  | string | Sí          | Username o ID del conductor         |
+| `limit`   | int    | No          | Resultados por página. Default: `20`|
+| `offset`  | int    | No          | Paginación. Default: `0`            |
+
+#### Request
+
+```bash
+curl "https://etc-corpocrea.odoo.com/api/routes/history?driver=rafaelpaez&limit=3&offset=0" \
+  -H "Cookie: session_id=..."
+```
+
+#### Response
+
 ```json
 {
   "success": true,
   "data": [
     {
-      "id": 123,
-      "name": "RUTA-001",
+      "id": 886,
+      "name": "RUTA000882",
+      "date": "2026-07-17",
+      "start_date": "2026-07-17 11:32:59",
+      "end_date": "2026-07-17 12:18:46",
+      "duration_minutes": 45.8,
+      "duration_formatted": "45m",
+      "total_deliveries": 1,
+      "completed_deliveries": 1
+    },
+    {
+      "id": 893,
+      "name": "RUTA000889",
+      "date": "2026-07-17",
+      "start_date": "2026-07-17 10:33:08",
+      "end_date": "2026-07-17 12:18:36",
+      "duration_minutes": 105.5,
+      "duration_formatted": "1h 45m",
+      "total_deliveries": 1,
+      "completed_deliveries": 1
+    },
+    {
+      "id": 875,
+      "name": "RUTA000871",
       "date": "2026-07-16",
-      "start_date": "2026-07-16 08:00:00",
-      "end_date": "2026-07-16 17:00:00",
-      "duration_minutes": 540.0,
-      "duration_formatted": "9h 0m",
-      "total_deliveries": 10,
-      "completed_deliveries": 10,
-      "lines": null
+      "start_date": "2026-07-16 10:22:35",
+      "end_date": "2026-07-16 14:54:33",
+      "duration_minutes": 272.0,
+      "duration_formatted": "4h 32m",
+      "total_deliveries": 2,
+      "completed_deliveries": 2
     }
   ],
   "pagination": {
-    "total": 50,
-    "limit": 20,
+    "total": 156,
+    "limit": 3,
     "offset": 0,
     "has_more": true
   }
 }
 ```
 
-> **Nota:** `lines` viene `null` en la lista resumen. Se cargan bajo demanda con el endpoint de detalle.
+> Datos reales del conductor **rafaelpaez** (driver_id=20173): **156 rutas completadas** en total.
 
-### `GET /api/routes/{routeId}`
-Obtener detalle completo de una ruta histórica (incluye líneas con productos y adjuntos).
+---
 
-**Response (`RouteHistoryLinesResponse`):**
+## 📦 Actualización de Estado de Líneas
+
+### `POST /api/routes/line/start`
+
+Inicia una línea de ruta (cambia estado a `in_progress`).
+
+#### Request
+
+```json
+{
+  "line_id": 926,
+  "state": "in_progress",
+  "latitude": 10.4858,
+  "longitude": -66.8531,
+  "timestamp": "2026-07-20 10:00:00"
+}
+```
+
+#### Response
+
 ```json
 {
   "success": true,
-  "message": null,
+  "message": "Ruta iniciada correctamente"
+}
+```
+
+---
+
+### `POST /api/routes/line/pickup*
+
+Marca una línea como "recogida" (estado `picked_up`).
+
+#### Request
+
+```json
+{
+  "line_id": 926,
+  "state": "picked_up",
+  "timestamp": "2026-07-20 10:30:00"
+}
+```
+
+---
+
+### `POST /api/routes/line/complete`
+
+Completa una línea de ruta (cambia estado a `done`).  
+Si todas las líneas están completadas, la ruta pasa automáticamente a estado `done`.
+
+#### Request
+
+```json
+{
+  "line_id": 926,
+  "state": "done",
+  "latitude": 10.4900,
+  "longitude": -66.8600,
+  "timestamp": "2026-07-20 11:00:00"
+}
+```
+
+#### Response
+
+```json
+{
+  "success": true,
+  "message": "Ruta completada correctamente"
+}
+```
+
+---
+
+### `POST /api/routes/line/incomplete`
+
+Marca una línea como incompleta con razón y notas.
+
+#### Request
+
+```json
+{
+  "line_id": 926,
+  "state": "incomplete",
+  "reason": "Cliente ausente",
+  "notes": "Se intentó contactar vía telefónica sin éxito",
+  "latitude": 10.4900,
+  "longitude": -66.8600,
+  "timestamp": "2026-07-20 11:30:00"
+}
+```
+
+---
+
+### `POST /api/routes/line/upload-image`
+
+Sube una imagen asociada a una línea de ruta (foto de entrega).
+
+#### Request
+
+```json
+{
+  "line_id": 926,
+  "image": "base64_encoded_image_data...",
+  "filename": "delivery_926_20260720110000.jpg",
+  "notes": "Foto de la entrega",
+  "timestamp": "2026-07-20 11:00:00"
+}
+```
+
+#### Response
+
+```json
+{
+  "success": true,
+  "message": "Imagen subida correctamente",
   "data": {
-    "route_lines": [
-      {
-        "id": 456,
-        "partner_id": { "id": 789, "name": "Cliente XYZ" },
-        "street": "Av. Principal 123",
-        "city": "Caracas",
-        "latitude": 10.4806,
-        "longitude": -66.9036,
-        "sequence": 1,
-        "notes": "Notas",
-        "obra": "Edificio Central",
-        "priority": "normal",
-        "state": "done",
-        "start_time": "2026-07-16 08:30:00",
-        "pickup_time": null,
-        "end_time": "2026-07-16 09:45:00",
-        "order_type": "sale",
-        "order_name": "PED-001",
-        "order_lines": [],
-        "attachments": [],
-        "incomplete_reason": null,
-        "incomplete_notes": null
-      }
-    ]
+    "line_id": 926,
+    "filename": "delivery_926_20260720110000.jpg",
+    "timestamp": "2026-07-20 11:00:00"
   }
 }
 ```
 
 ---
 
-## Estadísticas
+### `PUT /api/routes/{route_id}/state`
 
-### `GET /api/driver/stats?driver={driver_id}&period={period}`
-Obtener estadísticas del conductor.
+Actualiza el estado global de una ruta.
 
-**Query Params:**
-| Param | Type | Default | Description |
-|-------|------|---------|-------------|
-| driver | string | — | ID del conductor |
-| period | string | today | `today`, `week`, `month`, `all` |
+#### Request
 
-**Response (`DriverStatsResponse`):**
+```json
+{
+  "state": "started"
+}
+```
+
+#### Response
+
 ```json
 {
   "success": true,
-  "data": {
-    "driver": {
-      "id": 1,
-      "name": "Conductor",
-      "image": "base64_encoded_image"
-    },
-    "period": "today",
-    "summary": {
-      "total_routes": 5,
-      "completed_routes": 3,
-      "in_progress_routes": 1,
-      "pending_routes": 1,
-      "total_deliveries": 20,
-      "completed_deliveries": 12,
-      "pending_deliveries": 6,
-      "in_progress_deliveries": 2,
-      "completion_rate": 60.0
-    },
-    "performance": {
-      "avg_delivery_time_minutes": 15.5,
-      "avg_route_time_minutes": 120.0,
-      "avg_delivery_time_formatted": "15m 30s",
-      "avg_route_time_formatted": "2h 0m"
-    },
-    "today": {
-      "total": 10,
-      "completed": 6,
-      "pending": 3,
-      "in_progress": 1
-    }
-  }
+  "message": "Estado actualizado correctamente"
 }
 ```
 
 ---
 
-## Notificaciones
-
-### `GET /api/routes/check-new?driver={driver_id}&since={datetime}`
-Verificar si hay nuevas rutas asignadas desde la última comprobación.
-
-**Query Params:**
-| Param | Type | Description |
-|-------|------|-------------|
-| driver | string | ID del conductor |
-| since | string | (opcional) Fecha/hora desde cuándo revisar |
-
-**Response (`CheckNewRoutesResponse`):**
-```json
-{
-  "success": true,
-  "data": {
-    "has_new": true,
-    "new_count": 2,
-    "total_pending": 5,
-    "route_names": ["RUTA-002", "RUTA-003"],
-    "checked_at": "2026-07-16 10:00:00"
-  }
-}
-```
+## 🔔 Notificaciones Push y FCM
 
 ### `POST /api/fcm/register`
-Registrar token FCM para notificaciones push.
 
-**Request Body:**
+Registra un token FCM del dispositivo Android para recibir notificaciones push en tiempo real.
+
+#### Request
+
 ```json
 {
-  "driver_id": 1,
-  "token": "fcm_token_device",
-  "platform": "android | ios",
-  "username": "conductor_username"
+  "driver_id": 20173,
+  "token": "fM8x2Kc9...FCM_Token",
+  "platform": "android",
+  "username": "rafaelpaez"
 }
 ```
 
-**Response:**
+#### Response
+
 ```json
 {
   "success": true,
-  "message": "Token registrado"
+  "message": "Token FCM registrado"
 }
 ```
 
 ---
 
-## Resumen de endpoints
+## ❌ Endpoints NO Implementados en el Servidor
 
-| Método | Endpoint | Propósito |
-|--------|----------|-----------|
-| POST | `/api/auth/login` | Iniciar sesión |
-| GET | `/api/routes/sync` | Sincronizar rutas activas (con líneas, productos y adjuntos) |
-| GET | `/api/routes/driver` | Obtener rutas activas (alternativo) |
-| POST | `/api/routes/line/start` | Iniciar una entrega |
-| POST | `/api/routes/line/pickup` | Marcar recogida |
-| POST | `/api/routes/line/complete` | Completar entrega |
-| POST | `/api/routes/line/incomplete` | Marcar como incompleta/parcial |
-| POST | `/api/routes/line/upload-image` | Subir foto de evidencia |
-| POST | `/api/routes/state` | Actualizar estado de la ruta |
-| GET | `/api/routes/line/attachments/{lineId}` | Obtener adjuntos de una línea |
-| GET | `/api/attachment/{id}` | Descargar archivo adjunto |
-| GET | `/api/routes/history` | Historial de rutas (resumen) |
-| GET | `/api/routes/{routeId}` | Detalle de ruta histórica (líneas completas) |
-| GET | `/api/driver/stats` | Estadísticas del conductor |
-| GET | `/api/routes/check-new` | Verificar nuevas rutas |
-| POST | `/api/fcm/register` | Registrar token FCM |
+Los siguientes endpoints están definidos en el código del controlador pero **no están disponibles** en este servidor actualmente (devuelven 404):
+
+| Endpoint | Método | Estado |
+|----------|--------|--------|
+| `GET /api/routes/check-new` | GET | ❌ 404 |
+| `GET /api/routes/driver/{username}` | GET | ❌ Redirect a login |
+| `GET /api/routes/line/attachments/{line_id}` | GET | ❌ 404 |
+| `GET /api/routes/history/{route_id}/lines` | GET | ❌ Sin implementar |
+| `GET /api/attachment/{attachment_id}` | GET | ❌ Sin implementar |
+
+---
+
+## 🧪 Resumen de Pruebas Realizadas
+
+| Endpoint | Método | Código | Resultado |
+|----------|--------|--------|-----------|
+| `/api/auth/login` | POST | `200` | ✅ Login exitoso — sesión iniciada para rafaelpaez |
+| `/api/routes/sync` | GET | `200` | ✅ 0 rutas hoy, datos históricos con rutas completadas |
+| `/api/routes/886` | GET | `200` | ✅ Detalle de ruta RUTA000882 |
+| `/api/driver/stats` | GET | `200` | ✅ 28 rutas, 29 entregas, 100% completadas en el mes |
+| `/api/routes/history` | GET | `200` | ✅ 156 rutas totales, paginación funcional |
+| `/api/fcm/register` | POST | — | ⬜ Pendiente de probar (requiere token FCM real) |
+| `/api/routes/line/start` | POST | — | ⬜ No probado (requiere línea activa) |
+| `/api/routes/line/complete` | POST | — | ⬜ No probado (requiere línea activa) |
+| `/api/routes/line/upload-image` | POST | — | ⬜ No probado |
+
+---
+
+## 📌 Modelos de Datos (Respuestas)
+
+### `LoginResponse`
+
+| Campo          | Tipo    | Descripción                          | Ejemplo                    |
+|----------------|---------|--------------------------------------|----------------------------|
+| `success`      | bool    | Estado de la operación               | `true`                     |
+| `data.username`| string  | Nombre de usuario                    | `"rafaelpaez"`             |
+| `data.full_name`| string | Nombre completo                      | `"Rafael Paez"`            |
+| `data.role`    | string  | Rol del usuario                      | `"driver"`                 |
+| `data.driver_code`| string | Código interno del conductor       | `"DRV009"`                 |
+| `data.driver_id`| int    | ID del partner en Odoo               | `20173`                    |
+| `data.driver_name`| string | Nombre registrado del conductor    | `"MILANO AGUILAR GUSTAVO RAFAEL"` |
+
+### `RouteData`
+
+| Campo               | Tipo    | Descripción                          |
+|----------------------|---------|--------------------------------------|
+| `id`                | int     | ID de la ruta                        |
+| `name`              | string  | Nombre de la ruta                    |
+| `state`             | string  | Estado de la ruta                    |
+| `date`              | string  | Fecha de la ruta                     |
+| `driver_id.id`      | int     | ID del conductor                     |
+| `driver_id.name`    | string  | Nombre del conductor                 |
+| `route_lines[]`     | array   | Lista de líneas de la ruta           |
+
+### `RouteLineData`
+
+| Campo                 | Tipo    | Descripción                          |
+|------------------------|---------|--------------------------------------|
+| `id`                  | int     | ID de la línea                       |
+| `partner_id.id`       | int     | ID del cliente                       |
+| `partner_id.name`     | string  | Nombre del cliente                   |
+| `street`              | string  | Dirección                            |
+| `city`                | string  | Ciudad                               |
+| `latitude`            | float   | Latitud                              |
+| `longitude`           | float   | Longitud                             |
+| `sequence`            | int     | Orden de la parada                   |
+| `notes`               | string  | Notas adicionales                    |
+| `state`               | string  | `draft`, `in_progress`, `done`       |
+| `scheduled_time`      | string  | Hora programada                      |
+
+### `DriverStatsResponse`
+
+| Campo                                  | Tipo   | Descripción                              |
+|----------------------------------------|--------|------------------------------------------|
+| `data.driver.id`                       | int    | ID del conductor                         |
+| `data.driver.name`                     | string | Nombre del conductor                     |
+| `data.driver.image`                    | string | Foto del conductor (base64)              |
+| `data.period`                          | string | Período consultado                       |
+| `data.summary.total_routes`            | int    | Total de rutas                           |
+| `data.summary.completed_routes`        | int    | Rutas completadas                        |
+| `data.summary.completion_rate`         | float  | Porcentaje de completitud                |
+| `data.summary.total_deliveries`        | int    | Total de entregas                        |
+| `data.summary.completed_deliveries`    | int    | Entregas completadas                     |
+| `data.performance.avg_delivery_time_minutes` | float | Tiempo promedio por entrega        |
+| `data.performance.avg_route_time_minutes`    | float | Tiempo promedio por ruta            |
+| `data.today.total`                     | int    | Entregas de hoy                          |
+| `data.today.completed`                 | int    | Completadas hoy                          |
+
+### `RoutesHistoryResponse`
+
+| Campo                           | Tipo    | Descripción                          |
+|----------------------------------|---------|--------------------------------------|
+| `data[].id`                     | int     | ID de la ruta                        |
+| `data[].name`                   | string  | Nombre de la ruta                    |
+| `data[].date`                   | string  | Fecha de la ruta                     |
+| `data[].start_date`             | string  | Fecha/hora de inicio                 |
+| `data[].end_date`               | string  | Fecha/hora de finalización           |
+| `data[].duration_minutes`       | float   | Duración en minutos                  |
+| `data[].duration_formatted`     | string  | Duración formateada                  |
+| `data[].total_deliveries`       | int     | Total de entregas                    |
+| `data[].completed_deliveries`   | int     | Entregas completadas                 |
+| `pagination.total`              | int     | Total de registros                   |
+| `pagination.limit`              | int     | Límite por página                    |
+| `pagination.offset`             | int     | Offset actual                        |
+| `pagination.has_more`           | bool    | Si hay más páginas                   |
+
+---
+
+## 🔧 Notas Técnicas
+
+### Autenticación
+- El endpoint usa `username`/`password` (no `login`/`password`/`db`).
+- La sesión se mantiene mediante cookies HTTP (`session_id` con 7 días de expiración).
+- Se debe incluir la cookie `session_id` en todos los requests subsiguientes.
+
+### Estados de Línea de Ruta
+| Estado          | Descripción                    |
+|-----------------|--------------------------------|
+| `draft`         | Pendiente / sin iniciar        |
+| `in_progress`   | En progreso                    |
+| `picked_up`     | Recogido                       |
+| `done`          | Completado                     |
+| `incomplete`    | Incompleto                     |
+| `partial`       | Parcialmente completado        |
+
+### Estados de Ruta
+| Estado          | Descripción                    |
+|-----------------|--------------------------------|
+| `draft`         | Borrador                       |
+| `started`       | Iniciada (al menos 1 línea)   |
+| `finished`      | Finalizada (todas completadas) |
+| `done`          | Completada                     |
+| `cancelled`     | Cancelada                      |
+
+### Seguridad
+- Autenticación requerida para todos los endpoints excepto `/api/auth/login`.
+- CSRF deshabilitado para endpoints JSON.
+- Las operaciones se ejecutan con `sudo()` para evitar restricciones de permisos.
+
+---
+
+## 📝 Ejemplos de Uso (cURL)
+
+```bash
+# 1. Login
+curl -X POST https://etc-corpocrea.odoo.com/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"rafaelpaez","password":"rafaelpaez"}' \
+  -c cookies.txt
+
+# 2. Sincronizar rutas del día
+curl -b cookies.txt "https://etc-corpocrea.odoo.com/api/routes/sync?driver=rafaelpaez"
+
+# 3. Obtener estadísticas del mes
+curl -b cookies.txt "https://etc-corpocrea.odoo.com/api/driver/stats?driver=rafaelpaez&period=month"
+
+# 4. Historial de rutas (primeras 3)
+curl -b cookies.txt "https://etc-corpocrea.odoo.com/api/routes/history?driver=rafaelpaez&limit=3&offset=0"
+
+# 5. Detalle de ruta específica
+curl -b cookies.txt "https://etc-corpocrea.odoo.com/api/routes/886"
+```
