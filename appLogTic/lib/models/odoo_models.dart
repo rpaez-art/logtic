@@ -1,3 +1,5 @@
+import '../config/app_config.dart';
+
 class OdooConfig {
   final String baseUrl;
   final String apiKey;
@@ -359,14 +361,30 @@ class AttachmentData {
   });
 
   factory AttachmentData.fromJson(Map<String, dynamic> json) {
+    String? url = json['download_url'];
+    final id = json['id'] ?? 0;
+    if (url != null && url.isNotEmpty) {
+      if (url.startsWith('/')) {
+        final baseUrl = AppConfig.odooBaseUrl.endsWith('/')
+            ? AppConfig.odooBaseUrl.substring(0, AppConfig.odooBaseUrl.length - 1)
+            : AppConfig.odooBaseUrl;
+        url = '$baseUrl$url';
+      }
+    } else if (id > 0) {
+      final baseUrl = AppConfig.odooBaseUrl.endsWith('/')
+          ? AppConfig.odooBaseUrl.substring(0, AppConfig.odooBaseUrl.length - 1)
+          : AppConfig.odooBaseUrl;
+      url = '$baseUrl/api/attachment/$id?format=download';
+    }
+
     return AttachmentData(
-      id: json['id'] ?? 0,
+      id: id,
       name: json['name'] ?? '',
       filename: json['filename'],
       mimetype: json['mimetype'],
       fileSize: json['file_size'],
       createDate: json['create_date'],
-      downloadUrl: json['download_url'],
+      downloadUrl: url,
     );
   }
 

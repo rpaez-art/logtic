@@ -277,6 +277,32 @@ class RetrofitClient {
     });
   }
 
+  /// Download raw bytes of an attachment using session authentication
+  Future<List<int>?> downloadAttachmentBytes(int attachmentId, {String? downloadUrl}) async {
+    try {
+      final Uri uri;
+      if (downloadUrl != null && downloadUrl.isNotEmpty) {
+        uri = Uri.parse(downloadUrl);
+      } else {
+        uri = Uri.parse('$_baseUrl${AppConfig.apiAttachment}/$attachmentId').replace(queryParameters: {'format': 'download'});
+      }
+
+      final request = http.Request('GET', uri);
+      request.headers.addAll(_headers);
+      final cookies = _cookieManager.loadForRequest(uri);
+      if (cookies.isNotEmpty) {
+        request.headers['Cookie'] = cookies.map((c) => '${c.name}=${c.value}').join('; ');
+      }
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      if (response.statusCode == 200) {
+        return response.bodyBytes;
+      }
+    } catch (_) {}
+    return null;
+  }
+
   // Clear session
   Future<void> clearSession() async {
     _baseUrl = AppConfig.odooBaseUrl;

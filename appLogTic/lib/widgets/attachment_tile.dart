@@ -1,7 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../config/theme.dart';
 import '../models/odoo_models.dart';
+import '../services/api/retrofit_client.dart';
 
 /// A tile showing a single attachment/document with file icon or image thumbnail.
 /// Features elegant card design with soft shadows and elevation animation on tap.
@@ -16,6 +20,7 @@ class AttachmentTile extends StatefulWidget {
 
 class _AttachmentTileState extends State<AttachmentTile> {
   double _elevation = 0.5;
+  bool _isDownloading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +37,7 @@ class _AttachmentTileState extends State<AttachmentTile> {
         surfaceTintColor: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
-          onTap: () => _openAttachment(context),
+          onTap: _isDownloading ? null : () => _openAttachment(context),
           onHighlightChanged: (highlighted) {
             setState(() => _elevation = highlighted ? 3.0 : 0.5);
           },
@@ -74,7 +79,7 @@ class _AttachmentTileState extends State<AttachmentTile> {
                     ],
                   ),
                 ),
-                // View button
+                // View/Download button or Progress Indicator
                 Container(
                   width: 30,
                   height: 30,
@@ -82,11 +87,19 @@ class _AttachmentTileState extends State<AttachmentTile> {
                     color: _getFileColor().withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(
-                    isImageAttachment ? Icons.zoom_in : Icons.open_in_new,
-                    size: 16,
-                    color: _getFileColor(),
-                  ),
+                  child: _isDownloading
+                      ? Padding(
+                          padding: const EdgeInsets.all(7),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: _getFileColor(),
+                          ),
+                        )
+                      : Icon(
+                          isImageAttachment ? Icons.zoom_in : Icons.open_in_new,
+                          size: 16,
+                          color: _getFileColor(),
+                        ),
                 ),
               ],
             ),
@@ -120,8 +133,13 @@ class _AttachmentTileState extends State<AttachmentTile> {
     );
   }
 
-  /// Builds a small image thumbnail preview from the download URL
+  /// Builds a small image thumbnail preview from the download URL (with session auth)
   Widget _buildImageThumbnail() {
+    final sessionId = CookieManager().getSessionId();
+    final headers = sessionId != null && sessionId.isNotEmpty
+        ? {'Cookie': 'session_id=$sessionId'}
+        : <String, String>{};
+
     return Container(
       width: 48,
       height: 48,
@@ -140,6 +158,7 @@ class _AttachmentTileState extends State<AttachmentTile> {
         borderRadius: BorderRadius.circular(11),
         child: Image.network(
           attachment.downloadUrl!,
+          headers: headers,
           width: 48,
           height: 48,
           fit: BoxFit.cover,
@@ -212,23 +231,61 @@ class _AttachmentTileState extends State<AttachmentTile> {
 
   Future<void> _openAttachment(BuildContext context) async {
     final url = attachment.downloadUrl;
-    if (url != null && url.isNotEmpty) {
-      final uri = Uri.tryParse(url);
-      if (uri != null && await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No se pudo abrir el documento')),
-          );
-        }
-      }
-    } else {
+    if (url == null || url.isEmpty) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('URL de descarga no disponible')),
         );
       }
+      return;
+    }
+
+    setState(() => _isDownloading = true);
+
+    try {
+      final client = RetrofitClient();
+      final bytes = await client.downloadAttachmentBytes(
+        attachment.id,
+        downloadUrl: attachment.downloadUrl,
+      );
+
+      if (bytes != null && bytes.isNotEmpty) {
+        final tempDir = await getTemporaryDirectory();
+        final fileName = attachment.filename != null && attachment.filename!.isNotEmpty
+            ? attachment.filename!
+            : attachment.name;
+        
+        final safeFileName = fileName.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+        final file = File('${tempDir.path}/$safeFileName');
+        await file.writeAsBytes(bytes);
+
+        final openResult = await OpenFile.open(file.path);
+        if (openResult.type != ResultType.done && context.mounted) {
+          // If native open was not handled, try external launcher fallback
+          await _fallbackLaunchUrl(context, url);
+        }
+      } else if (context.mounted) {
+        await _fallbackLaunchUrl(context, url);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        await _fallbackLaunchUrl(context, url);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isDownloading = false);
+      }
+    }
+  }
+
+  Future<void> _fallbackLaunchUrl(BuildContext context, String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri != null && await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo abrir el documento')),
+      );
     }
   }
 }
