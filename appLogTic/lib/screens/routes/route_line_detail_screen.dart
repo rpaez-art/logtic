@@ -33,6 +33,8 @@ class _RouteLineDetailScreenState extends State<RouteLineDetailScreen> {
 
   void _findLineData() {
     final odoo = context.read<OdooProvider>();
+
+    // Search in today's synced routes first
     for (final route in odoo.odooRoutes) {
       for (final line in route.routeLines) {
         if (line.id == widget.lineId) {
@@ -44,6 +46,22 @@ class _RouteLineDetailScreenState extends State<RouteLineDetailScreen> {
         }
       }
     }
+
+    // Then search in historical routes lines
+    for (final historyItem in odoo.routesHistory) {
+      if (historyItem.lines != null) {
+        for (final line in historyItem.lines!) {
+          if (line.id == widget.lineId) {
+            setState(() {
+              _lineData = line;
+              _isLoading = false;
+            });
+            return;
+          }
+        }
+      }
+    }
+
     setState(() => _isLoading = false);
   }
 
