@@ -9,6 +9,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/odoo_provider.dart';
 import '../../widgets/theme_toggle_button.dart';
 import '../../widgets/attachment_tile.dart';
+import '../routes/widgets/supplier_info_dialog.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -1178,43 +1179,76 @@ class _DashboardLineCardState extends State<_DashboardLineCard> {
             children: [
               // Partner & state
               Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: stateColor.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        line.partnerId.name.isNotEmpty
-                            ? line.partnerId.name[0].toUpperCase()
-                            : '?',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: stateColor),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          line.partnerId.name,
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                    child: InkWell(
+                      onTap: () => SupplierInfoDialog.show(context, line),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: stateColor.withValues(alpha: 0.15),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  line.partnerId.name.isNotEmpty
+                                      ? line.partnerId.name[0].toUpperCase()
+                                      : '?',
+                                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: stateColor),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          line.partnerId.name.isNotEmpty
+                                              ? line.partnerId.name
+                                              : 'Contacto sin nombre',
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            height: 1.2,
+                                          ),
+                                          softWrap: true,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      const Icon(
+                                        Icons.info_outline_rounded,
+                                        size: 14,
+                                        color: AppColors.primary,
+                                      ),
+                                    ],
+                                  ),
+                                  if (line.obra != null && line.obra!.isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 2),
+                                      child: Text(
+                                        '📍 ${line.obra}',
+                                        style: const TextStyle(fontSize: 11, color: AppColors.gray600),
+                                        softWrap: true,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                        if (line.obra != null && line.obra!.isNotEmpty)
-                          Text(
-                            '📍 ${line.obra}',
-                            style: const TextStyle(fontSize: 11, color: AppColors.gray600),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                      ],
+                      ),
                     ),
                   ),
                   Container(
@@ -1257,8 +1291,8 @@ class _DashboardLineCardState extends State<_DashboardLineCard> {
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(color: AppColors.gray50, borderRadius: BorderRadius.circular(8)),
-                  child: Text(_parseHtml(line.notes!), style: const TextStyle(fontSize: 12, color: AppColors.gray700)),
+                  decoration: BoxDecoration(color: context.containerColor, borderRadius: BorderRadius.circular(8)),
+                  child: Text(_parseHtml(line.notes!), style: TextStyle(fontSize: 12, color: context.onSurfaceColor)),
                 ),
               ],
 

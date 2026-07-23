@@ -10,6 +10,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/odoo_provider.dart';
 import './widgets/photo_capture_dialog.dart';
 import './widgets/incomplete_reason_dialog.dart';
+import './widgets/supplier_info_dialog.dart';
 import '../../widgets/theme_toggle_button.dart';
 import '../../widgets/attachment_tile.dart';
 
@@ -462,30 +463,101 @@ class _RouteActivityCardState extends State<_RouteActivityCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(children: [
-              Container(
-                width: 40, height: 40,
-                decoration: BoxDecoration(color: stateColor.withValues(alpha: 0.15), shape: BoxShape.circle),
-                child: Center(child: Text(
-                  widget.line.partnerId.name.isNotEmpty ? widget.line.partnerId.name[0].toUpperCase() : '?',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: stateColor),
-                )),
-              ),
-              const SizedBox(width: 10),
-              Expanded(child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(widget.line.partnerId.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                  if (widget.line.obra != null && widget.line.obra!.isNotEmpty)
-                    Text('📍 ${widget.line.obra}', style: const TextStyle(fontSize: 12, color: AppColors.gray600)),
-                ],
-              )),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: stateColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
-                child: Text(_getStateLabel(widget.line.state), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: stateColor)),
-              ),
-            ]),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () => SupplierInfoDialog.show(context, widget.line),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: stateColor.withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                widget.line.partnerId.name.isNotEmpty
+                                    ? widget.line.partnerId.name[0].toUpperCase()
+                                    : '?',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: stateColor,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        widget.line.partnerId.name.isNotEmpty
+                                            ? widget.line.partnerId.name
+                                            : 'Contacto sin nombre',
+                                        style: const TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600,
+                                          height: 1.25,
+                                        ),
+                                        softWrap: true,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(
+                                      Icons.info_outline_rounded,
+                                      size: 16,
+                                      color: AppColors.primary,
+                                    ),
+                                  ],
+                                ),
+                                if (widget.line.obra != null && widget.line.obra!.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 2),
+                                    child: Text(
+                                      '📍 ${widget.line.obra}',
+                                      style: const TextStyle(fontSize: 12, color: AppColors.gray600),
+                                      softWrap: true,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: stateColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    _getStateLabel(widget.line.state),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: stateColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
             if (widget.line.street != null && widget.line.street!.isNotEmpty) ...[
               const SizedBox(height: 10),
               Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -505,7 +577,7 @@ class _RouteActivityCardState extends State<_RouteActivityCard> {
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: AppColors.gray50, borderRadius: BorderRadius.circular(10)),
+                decoration: BoxDecoration(color: context.containerColor, borderRadius: BorderRadius.circular(10)),
                 child: Text(_parseHtml(widget.line.notes!), style: const TextStyle(fontSize: 13)),
               ),
             ],

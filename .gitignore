@@ -26,3 +26,6 @@ appLogTic/build
 out/
 appLogTic/.dart_tool/
 .freebuff/
+appLogTic/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+appLogTic/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+appLogTic/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java

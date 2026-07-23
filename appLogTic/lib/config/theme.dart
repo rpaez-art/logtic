@@ -81,9 +81,24 @@ class AppTheme {
     appBarTheme: const AppBarTheme(
       centerTitle: false,
       elevation: 0,
+      backgroundColor: AppColors.corpGreen,
+      foregroundColor: AppColors.white,
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: AppColors.white,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+    ),
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: AppColors.white,
+      surfaceTintColor: Colors.transparent,
+    ),
+    drawerTheme: const DrawerThemeData(
+      backgroundColor: AppColors.white,
     ),
     cardTheme: CardThemeData(
       elevation: 2,
+      color: AppColors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
@@ -141,6 +156,7 @@ class AppTheme {
       elevation: 8,
     ),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      backgroundColor: AppColors.white,
       selectedItemColor: AppColors.primary,
       unselectedItemColor: AppColors.gray500,
     ),
@@ -158,22 +174,36 @@ class AppTheme {
       secondaryContainer: AppColors.secondary.withValues(alpha: 0.3),
       tertiary: AppColors.accentLight,
       error: AppColors.errorLight,
-      surface: AppColors.corpDarkGray,
+      surface: const Color(0xFF25282A),
       onSurface: AppColors.white,
       onSurfaceVariant: AppColors.gray400,
       outline: AppColors.gray600,
     ),
-    scaffoldBackgroundColor: const Color(0xFF1A1C1D),
+    scaffoldBackgroundColor: const Color(0xFF141617),
     appBarTheme: const AppBarTheme(
       centerTitle: false,
       elevation: 0,
+      backgroundColor: Color(0xFF1D3C34),
+      foregroundColor: AppColors.white,
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: const Color(0xFF25282A),
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+    ),
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: Color(0xFF25282A),
+      surfaceTintColor: Colors.transparent,
+    ),
+    drawerTheme: const DrawerThemeData(
+      backgroundColor: Color(0xFF1E2022),
     ),
     cardTheme: CardThemeData(
       elevation: 2,
+      color: const Color(0xFF25282A),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
-      color: const Color(0xFF2F3234),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
@@ -184,9 +214,17 @@ class AppTheme {
         ),
       ),
     ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: const Color(0xFF2F3234),
+      fillColor: const Color(0xFF1E2022),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: AppColors.gray600),
@@ -201,5 +239,34 @@ class AppTheme {
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     ),
+    chipTheme: ChipThemeData(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+    ),
+    dividerTheme: const DividerThemeData(
+      color: Color(0xFF383C3E),
+      thickness: 1,
+    ),
+    floatingActionButtonTheme: const FloatingActionButtonThemeData(
+      backgroundColor: AppColors.secondaryLight,
+      foregroundColor: AppColors.black,
+      elevation: 8,
+    ),
+    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      backgroundColor: Color(0xFF1E2022),
+      selectedItemColor: AppColors.secondaryLight,
+      unselectedItemColor: AppColors.gray400,
+    ),
   );
+}
+
+/// Extension helpers to easily query theme-aware colors in widgets
+extension ThemeContextExtension on BuildContext {
+  bool get isDarkMode => Theme.of(this).brightness == Brightness.dark;
+  Color get surfaceColor => Theme.of(this).colorScheme.surface;
+  Color get onSurfaceColor => Theme.of(this).colorScheme.onSurface;
+  Color get containerColor => isDarkMode ? const Color(0xFF1E2022) : AppColors.gray50;
+  Color get borderColor => isDarkMode ? const Color(0xFF383C3E) : AppColors.gray200;
+  Color get subtextColor => isDarkMode ? AppColors.gray400 : AppColors.gray600;
 }

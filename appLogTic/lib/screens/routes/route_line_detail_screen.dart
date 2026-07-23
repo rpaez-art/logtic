@@ -6,6 +6,7 @@ import '../../models/odoo_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/odoo_provider.dart';
 import '../../widgets/attachment_tile.dart';
+import './widgets/supplier_info_dialog.dart';
 
 class RouteLineDetailScreen extends StatefulWidget {
   final int lineId;
@@ -132,52 +133,69 @@ class _RouteLineDetailScreenState extends State<RouteLineDetailScreen> {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // Status card
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [stateColor.withValues(alpha: 0.1), stateColor.withValues(alpha: 0.05)],
+          // Status & Supplier card
+          InkWell(
+            onTap: () => SupplierInfoDialog.show(context, line),
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [stateColor.withValues(alpha: 0.1), stateColor.withValues(alpha: 0.05)],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: stateColor.withValues(alpha: 0.3)),
               ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: stateColor.withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: stateColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: stateColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(_getStateIcon(line.state), color: stateColor, size: 32),
                   ),
-                  child: Icon(_getStateIcon(line.state), color: stateColor, size: 32),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        line.partnerId.name,
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: stateColor.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(8),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                line.partnerId.name.isNotEmpty ? line.partnerId.name : 'Contacto sin nombre',
+                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, height: 1.25),
+                                softWrap: true,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.info_outline_rounded,
+                              size: 18,
+                              color: AppColors.primary,
+                            ),
+                          ],
                         ),
-                        child: Text(
-                          _getStateLabel(line.state),
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: stateColor),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: stateColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            _getStateLabel(line.state),
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: stateColor),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -190,7 +208,7 @@ class _RouteLineDetailScreenState extends State<RouteLineDetailScreen> {
               children: [
                 Text(line.street!, style: const TextStyle(fontSize: 15)),
                 if (line.city != null && line.city!.isNotEmpty)
-                  Text(line.city!, style: const TextStyle(fontSize: 13, color: AppColors.gray600)),
+                  Text(line.city!, style: TextStyle(fontSize: 13, color: context.subtextColor)),
               ],
             ),
           if (line.street != null && line.street!.isNotEmpty)
@@ -201,7 +219,7 @@ class _RouteLineDetailScreenState extends State<RouteLineDetailScreen> {
             _InfoCard(
               icon: Icons.build,
               title: 'Obra',
-              children: [Text(line.obra!, style: const TextStyle(fontSize: 15))],
+              children: [Text(line.obra!, style: TextStyle(fontSize: 15, color: context.onSurfaceColor))],
             ),
           if (line.obra != null && line.obra!.isNotEmpty)
             const SizedBox(height: 12),
@@ -214,7 +232,7 @@ class _RouteLineDetailScreenState extends State<RouteLineDetailScreen> {
               children: [
                 Text(
                   line.notes!.replaceAll(RegExp(r'<[^>]*>'), ''),
-                  style: const TextStyle(fontSize: 14, color: AppColors.gray700),
+                  style: TextStyle(fontSize: 14, color: context.onSurfaceColor),
                 ),
               ],
             ),
@@ -406,7 +424,7 @@ class _TimeRow extends StatelessWidget {
         children: [
           Icon(icon, size: 16, color: color),
           const SizedBox(width: 8),
-          Text('$label: ', style: const TextStyle(fontSize: 13, color: AppColors.gray600)),
+          Text('$label: ', style: TextStyle(fontSize: 13, color: context.subtextColor)),
           Text(time, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: color)),
         ],
       ),

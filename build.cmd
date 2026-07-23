@@ -18,7 +18,7 @@ if defined JAVA_HOME (
 )
 
 echo =====================================
-echo [*] Construyendo appLogTic (Debug ^& Release Firmado)
+echo [*] Construyendo appLogTic (Release Firmado ^& Debug)
 echo =====================================
 
 set FLUTTER_CMD=C:\Users\r.paez\flutter\bin\flutter.bat
@@ -29,21 +29,9 @@ mkdir "%OUT_DIR%"
 
 cd /d "%APP_DIR%"
 
-echo [*] Limpiando proyecto...
+echo [*] Limpiando build cache...
 call "%FLUTTER_CMD%" clean
 echo [*] Obteniendo dependencias...
-call "%FLUTTER_CMD%" pub get
-
-echo [*] Compilando APK Debug...
-call "%FLUTTER_CMD%" build apk --debug
-
-if exist "build\app\outputs\flutter-apk\app-debug.apk" (
-    copy /Y "build\app\outputs\flutter-apk\app-debug.apk" "%OUT_DIR%\appLogTic-debug.apk" >nul
-    echo [+] APK Debug generado: %OUT_DIR%\appLogTic-debug.apk
-)
-
-echo [*] Limpiando cache intermedia para Release...
-call "%FLUTTER_CMD%" clean
 call "%FLUTTER_CMD%" pub get
 
 echo [*] Compilando APK Release Firmado...
@@ -54,9 +42,17 @@ if exist "build\app\outputs\flutter-apk\app-release.apk" (
     echo [+] APK Release generado: %OUT_DIR%\appLogTic-release.apk
 )
 
+echo [*] Compilando APK Debug...
+call "%FLUTTER_CMD%" build apk --debug
+
+if exist "build\app\outputs\flutter-apk\app-debug.apk" (
+    copy /Y "build\app\outputs\flutter-apk\app-debug.apk" "%OUT_DIR%\appLogTic-debug.apk" >nul
+    echo [+] APK Debug generado: %OUT_DIR%\appLogTic-debug.apk
+)
+
 echo =====================================
 echo [~] Proceso completado exitosamente.
 echo Puedes encontrar tus APKs en:
-echo  - Debug:   %OUT_DIR%\appLogTic-debug.apk
 echo  - Release: %OUT_DIR%\appLogTic-release.apk
+echo  - Debug:   %OUT_DIR%\appLogTic-debug.apk
 echo =====================================

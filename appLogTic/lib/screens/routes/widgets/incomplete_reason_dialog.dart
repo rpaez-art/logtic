@@ -231,10 +231,10 @@ class _StateChip extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.statusIncomplete : AppColors.white,
+          color: isSelected ? AppColors.statusIncomplete : context.containerColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? AppColors.statusIncomplete : AppColors.gray300,
+            color: isSelected ? AppColors.statusIncomplete : context.borderColor,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -244,7 +244,7 @@ class _StateChip extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: isSelected ? AppColors.white : AppColors.corpDarkGray,
+              color: isSelected ? AppColors.white : context.onSurfaceColor,
             ),
           ),
         ),
