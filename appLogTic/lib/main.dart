@@ -19,10 +19,34 @@ import 'providers/user_management_provider.dart';
 import 'providers/notification_badge_provider.dart';
 import 'providers/theme_provider.dart';
 
-/// Top-level background message handler (required by Firebase)
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  LogService.instance.debug('FCM', '🔔 FCM Background: ${message.messageId}');
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  await LocalNotificationService.instance.init();
+
+  // Extraer título y cuerpo del payload de datos si existe, o usar uno por defecto
+  final title = message.data['title'] ?? 'LogTic';
+  
+  // Si viene una ruta nueva, el payload trae route_count
+  String body = message.data['body'] ?? 'Tienes actualizaciones en tus entregas.';
+  if (message.data.containsKey('route_count')) {
+    final count = message.data['route_count'];
+    body = 'Te han asignado $count nueva(s) ruta(s).';
+  }
+
+  // Mostrar la notificación local
+  await LocalNotificationService.instance.showFcmNotification(
+    id: LocalNotificationService.generateId(message.messageId ?? DateTime.now().millisecondsSinceEpoch.toString()),
+    title: title,
+    body: body,
+    data: message.data,
+  );
+
+  try {
+    LogService.instance.debug('FCM', '🔔 FCM Background: ${message.messageId}');
+  } catch (_) {}
+
   // Store route data for when app opens
   if (message.data.containsKey('route')) {
     final prefs = await SharedPreferences.getInstance();

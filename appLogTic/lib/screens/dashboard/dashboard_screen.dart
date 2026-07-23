@@ -449,7 +449,7 @@ class _DashboardHeader extends StatelessWidget {
           child: Image.memory(
             Uint8List.fromList(bytes),
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => _defaultIcon(),
+            errorBuilder: (_, _, _) => _defaultIcon(),
           ),
         );
       } catch (_) {

@@ -453,12 +453,41 @@ class _HistoryLineCard extends StatefulWidget {
 
 class _HistoryLineCardState extends State<_HistoryLineCard> {
   bool _showProducts = false;
+  bool _isLoadingAttachments = false;
+  List<AttachmentData> _attachments = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _attachments = widget.line.attachments ?? [];
+    if (_attachments.isEmpty) {
+      _fetchAttachments();
+    }
+  }
+
+  Future<void> _fetchAttachments() async {
+    setState(() => _isLoadingAttachments = true);
+    try {
+      final odoo = Provider.of<OdooProvider>(context, listen: false);
+      final attachments = await odoo.getLineAttachments(widget.line.id);
+      if (mounted) {
+        setState(() {
+          _attachments = attachments;
+          _isLoadingAttachments = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingAttachments = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final line = widget.line;
     final stateColor = _getStateColor(line.state);
-    final hasAttachments = line.attachments != null && line.attachments!.isNotEmpty;
+    final hasAttachments = _attachments.isNotEmpty;
 
     return Card(
       child: Padding(
@@ -655,9 +684,22 @@ class _HistoryLineCardState extends State<_HistoryLineCard> {
                 ),
             ],
             // Documents (attachments)
-            if (hasAttachments) ...[
+            if (_isLoadingAttachments) ...[
               const SizedBox(height: 10),
-              AttachmentsGrouped(attachments: line.attachments!),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ] else if (hasAttachments) ...[
+              const SizedBox(height: 10),
+              AttachmentsGrouped(attachments: _attachments),
             ],
             // Navigate button (like routes_screen _RouteActivityCard)
             const SizedBox(height: 12),

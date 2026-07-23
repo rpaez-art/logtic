@@ -3,6 +3,7 @@ import java.util.Properties
 
 plugins {
     id("com.android.application")
+    id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
     id("com.google.gms.google-services")
 }
@@ -20,12 +21,12 @@ android {
 
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlin {
-        jvmToolchain(21)
+    kotlinOptions {
+        jvmTarget = "17"
     }
 
     defaultConfig {
@@ -56,6 +57,23 @@ android {
                 signingConfigs.getByName("release")
             } else {
                 signingConfigs.getByName("debug")
+            }
+        }
+    }
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    options.compilerArgs.add("-Xlint:-options")
+    doFirst {
+        val registrantFile = file("src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java")
+        if (registrantFile.exists()) {
+            var content = registrantFile.readText()
+            val originalContent = content
+            content = content.replace("flutterEngine.getPlugins().add(new dev.fluttercommunity.plus.packageinfo.PackageInfoPlugin());", "")
+            content = content.replace("Log.e(TAG, \"Error registering plugin package_info_plus, dev.fluttercommunity.plus.packageinfo.PackageInfoPlugin\", e);", "")
+            content = content.replace("import dev.fluttercommunity.plus.packageinfo.PackageInfoPlugin;", "")
+            if (content != originalContent) {
+                registrantFile.writeText(content)
             }
         }
     }

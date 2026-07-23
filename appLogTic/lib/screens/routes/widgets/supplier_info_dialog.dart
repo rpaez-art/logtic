@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:provider/provider.dart';
 import '../../../config/theme.dart';
 import '../../../models/odoo_models.dart';
 import '../../../widgets/attachment_tile.dart';
+import '../../../providers/odoo_provider.dart';
 
-class SupplierInfoDialog extends StatelessWidget {
+class SupplierInfoDialog extends StatefulWidget {
   final RouteLineData line;
 
   const SupplierInfoDialog({
@@ -20,7 +22,43 @@ class SupplierInfoDialog extends StatelessWidget {
   }
 
   @override
+  State<SupplierInfoDialog> createState() => _SupplierInfoDialogState();
+}
+
+class _SupplierInfoDialogState extends State<SupplierInfoDialog> {
+  bool _isLoadingAttachments = false;
+  List<AttachmentData> _attachments = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _attachments = widget.line.attachments ?? [];
+    if (_attachments.isEmpty) {
+      _fetchAttachments();
+    }
+  }
+
+  Future<void> _fetchAttachments() async {
+    setState(() => _isLoadingAttachments = true);
+    try {
+      final odoo = Provider.of<OdooProvider>(context, listen: false);
+      final attachments = await odoo.getLineAttachments(widget.line.id);
+      if (mounted) {
+        setState(() {
+          _attachments = attachments;
+          _isLoadingAttachments = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingAttachments = false);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final line = widget.line;
     final stateColor = _getStateColor(line.state);
     final size = MediaQuery.of(context).size;
     final containerColor = context.containerColor;
@@ -342,12 +380,51 @@ class SupplierInfoDialog extends StatelessWidget {
                     ],
 
                     // Section 4: Attachments / Documents
-                    if (line.attachments != null && line.attachments!.isNotEmpty) ...[
-                      _SectionTitle(icon: Icons.attachment_rounded, title: 'Documentos y Archivos Adjuntos (${line.attachments!.length})'),
-                      const SizedBox(height: 8),
-                      AttachmentsGrouped(attachments: line.attachments!),
-                      const SizedBox(height: 16),
-                    ],
+                    _SectionTitle(
+                      icon: Icons.attachment_rounded,
+                      title: _attachments.isNotEmpty
+                          ? 'Documentos y Archivos Adjuntos (${_attachments.length})'
+                          : 'Documentos y Archivos Adjuntos',
+                    ),
+                    const SizedBox(height: 8),
+                    if (_isLoadingAttachments)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        decoration: BoxDecoration(
+                          color: containerColor,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: borderColor),
+                        ),
+                        child: const Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    else if (_attachments.isNotEmpty)
+                      AttachmentsGrouped(attachments: _attachments)
+                    else
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: containerColor,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: borderColor),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.folder_off_outlined, size: 20, color: subtextColor),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Sin documentos ni archivos adjuntos asociados a esta entrega.',
+                                style: TextStyle(fontSize: 12, color: subtextColor),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    const SizedBox(height: 16),
 
                     // Section 5: Timeline / Registered Times
                     if (line.startTime != null || line.pickupTime != null || line.endTime != null) ...[

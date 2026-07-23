@@ -637,73 +637,75 @@ class _RouteActivityCardState extends State<_RouteActivityCard> {
   }
 
   Widget _buildActionButtons(BuildContext context) {
-    return Row(children: [
-      Expanded(
-        child: ElevatedButton.icon(
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      alignment: WrapAlignment.start,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        ElevatedButton.icon(
           onPressed: _navigate,
           icon: const Icon(Icons.navigation, size: 18),
           label: const Text('Navegar', style: TextStyle(fontSize: 13)),
           style: ElevatedButton.styleFrom(backgroundColor: AppColors.accent, foregroundColor: AppColors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
         ),
-      ),
-      const SizedBox(width: 8),
-      ..._buildStateButtons(context),
-    ]);
+        ..._buildStateButtons(context),
+      ],
+    );
   }
 
   List<Widget> _buildStateButtons(BuildContext context) {
     switch (widget.line.state) {
       case 'pending':
-        return [Expanded(child: OutlinedButton.icon(
-          onPressed: () => widget.odoo.notifyLineStarted(widget.line.id, _currentLocation.first, _currentLocation.second),
-          icon: const Icon(Icons.play_arrow, size: 18),
-          label: const Text('Iniciar', style: TextStyle(fontSize: 13)),
-          style: OutlinedButton.styleFrom(foregroundColor: AppColors.primary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-        ))];
+        return [
+          OutlinedButton.icon(
+            onPressed: () => widget.odoo.notifyLineStarted(widget.line.id, _currentLocation.first, _currentLocation.second),
+            icon: const Icon(Icons.play_arrow, size: 18),
+            label: const Text('Iniciar', style: TextStyle(fontSize: 13)),
+            style: OutlinedButton.styleFrom(foregroundColor: AppColors.primary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+          )
+        ];
       case 'in_progress':
         return [
-          Expanded(child: ElevatedButton.icon(
+          ElevatedButton.icon(
             onPressed: () => widget.odoo.notifyLinePickedUp(widget.line.id, _currentLocation.first, _currentLocation.second),
             icon: const Icon(Icons.local_shipping, size: 16),
             label: const Text('Recoger', style: TextStyle(fontSize: 11)),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.statusPickedUp, foregroundColor: AppColors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-          )),
-          const SizedBox(width: 8),
-          Expanded(child: ElevatedButton.icon(
+          ),
+          ElevatedButton.icon(
             onPressed: () => _showPhotoDialog(context),
             icon: const Icon(Icons.camera_alt, size: 16),
             label: const Text('Finalizar', style: TextStyle(fontSize: 11)),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.statusCompleted, foregroundColor: AppColors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-          )),
-          const SizedBox(width: 8),
-          Expanded(child: OutlinedButton.icon(
+          ),
+          OutlinedButton.icon(
             onPressed: () => _showIncompleteDialog(context),
             icon: const Icon(Icons.warning, size: 16),
             label: const Text('Incompleta', style: TextStyle(fontSize: 11)),
             style: OutlinedButton.styleFrom(foregroundColor: AppColors.statusIncomplete, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-          )),
+          ),
         ];
       case 'picked_up':
         return [
-          Expanded(child: ElevatedButton.icon(
+          ElevatedButton.icon(
             onPressed: () => _showPhotoDialog(context),
             icon: const Icon(Icons.camera_alt, size: 18),
             label: const Text('Finalizar con Foto', style: TextStyle(fontSize: 12)),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.statusCompleted, foregroundColor: AppColors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-          )),
-          const SizedBox(width: 8),
-          Expanded(child: OutlinedButton.icon(
+          ),
+          OutlinedButton.icon(
             onPressed: () => _showIncompleteDialog(context),
             icon: const Icon(Icons.warning, size: 16),
             label: const Text('Incompleta', style: TextStyle(fontSize: 12)),
             style: OutlinedButton.styleFrom(foregroundColor: AppColors.statusIncomplete, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-          )),
+          ),
         ];
       case 'done':
       case 'incomplete':
       case 'partial':
-        return [Expanded(child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+        return [Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           decoration: BoxDecoration(
             color: (widget.line.state == 'done' ? AppColors.statusCompleted : AppColors.statusIncomplete).withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(12),
@@ -716,13 +718,13 @@ class _RouteActivityCardState extends State<_RouteActivityCard> {
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500,
                 color: widget.line.state == 'done' ? AppColors.statusCompleted : AppColors.statusIncomplete)),
           ]),
-        ))];
+        )];
       default:
-        return [Expanded(child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+        return [Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           decoration: BoxDecoration(color: AppColors.statusCancelled.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(12)),
           child: const Center(child: Text('Cancelada', style: TextStyle(fontSize: 13, color: AppColors.statusCancelled))),
-        ))];
+        )];
     }
   }
 

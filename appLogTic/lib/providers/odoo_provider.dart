@@ -252,6 +252,18 @@ class OdooProvider extends ChangeNotifier {
     }, 'marcando línea incompleta');
   }
 
+  Future<List<AttachmentData>> getLineAttachments(int lineId) async {
+    try {
+      final response = await _client.getLineAttachments(lineId);
+      if (response.success && response.data != null) {
+        return response.data!.attachments;
+      }
+    } catch (e) {
+      debugPrint('Error getting line attachments: $e');
+    }
+    return [];
+  }
+
   void _performAction(Future<bool> Function() action, String description) async {
     try {
       debugPrint('$description...');
