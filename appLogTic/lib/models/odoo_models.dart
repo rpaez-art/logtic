@@ -199,6 +199,8 @@ class RouteLineData {
   final List<AttachmentData>? attachments;
   final String? incompleteReason;
   final String? incompleteNotes;
+  final String? originAddress;
+  final String? destinationAddress;
 
   RouteLineData({
     required this.id,
@@ -222,6 +224,8 @@ class RouteLineData {
     this.attachments,
     this.incompleteReason,
     this.incompleteNotes,
+    this.originAddress,
+    this.destinationAddress,
   });
 
   factory RouteLineData.fromJson(Map<String, dynamic> json) {
@@ -251,6 +255,8 @@ class RouteLineData {
           .toList(),
       incompleteReason: json['incomplete_reason'],
       incompleteNotes: json['incomplete_notes'],
+      originAddress: json['origin_address'],
+      destinationAddress: json['destination_address'],
     );
   }
 
@@ -276,6 +282,8 @@ class RouteLineData {
     List<AttachmentData>? attachments,
     String? incompleteReason,
     String? incompleteNotes,
+    String? originAddress,
+    String? destinationAddress,
   }) {
     return RouteLineData(
       id: id ?? this.id,
@@ -299,6 +307,8 @@ class RouteLineData {
       attachments: attachments ?? this.attachments,
       incompleteReason: incompleteReason ?? this.incompleteReason,
       incompleteNotes: incompleteNotes ?? this.incompleteNotes,
+      originAddress: originAddress ?? this.originAddress,
+      destinationAddress: destinationAddress ?? this.destinationAddress,
     );
   }
 }

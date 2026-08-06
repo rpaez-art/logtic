@@ -333,6 +333,10 @@ class _ExpandableRouteCardState extends State<_ExpandableRouteCard> {
     final progress = totalCount > 0 ? completedCount / totalCount : 0.0;
     final hasUrgent = widget.routeLines.any((l) => l.priority == 'urgent' && !['done', 'cancelled', 'incomplete', 'partial'].contains(l.state));
     final isUrgent = hasUrgent || (widget.routeData.maxPriority == 'urgent' && widget.routeData.state != 'finished');
+    // Obra asociada: primera línea con obra no vacía
+    final obra = widget.routeLines
+        .map((l) => l.obra)
+        .firstWhere((o) => o != null && o.isNotEmpty, orElse: () => null);
 
     return Card(
       shape: RoundedRectangleBorder(
@@ -359,7 +363,31 @@ class _ExpandableRouteCardState extends State<_ExpandableRouteCard> {
                       child: Icon(isUrgent ? Icons.warning : Icons.route, color: isUrgent ? AppColors.error : AppColors.primary, size: 20),
                     ),
                     const SizedBox(width: 8),
-                    Expanded(child: Text(widget.routeName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(widget.routeName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          if (obra != null) ...[
+                            const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                const Icon(Icons.business_rounded, size: 13, color: AppColors.secondary),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    obra,
+                                    style: const TextStyle(fontSize: 12, color: AppColors.gray600),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
                     if (isUrgent)
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -558,20 +586,76 @@ class _RouteActivityCardState extends State<_RouteActivityCard> {
                 ),
               ],
             ),
-            if (widget.line.street != null && widget.line.street!.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Icon(Icons.place, size: 16, color: AppColors.primary),
-                const SizedBox(width: 6),
-                Expanded(child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(widget.line.street!, style: const TextStyle(fontSize: 13)),
-                    if (widget.line.city != null) Text(widget.line.city!, style: const TextStyle(fontSize: 11, color: AppColors.gray600)),
-                  ],
-                )),
-              ]),
-            ],
+            // ── Desde / Hasta (Origen / Destino) ──
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: context.containerColor,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: context.borderColor),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Desde: ubicación actual del conductor (GPS)
+                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Icon(Icons.trip_origin, size: 16, color: AppColors.statusInProgress),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Desde: Mi ubicación',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.subtextColor),
+                          ),
+                          if (widget.line.originAddress != null && widget.line.originAddress!.isNotEmpty)
+                            Text(
+                              widget.line.originAddress!,
+                              style: const TextStyle(fontSize: 12, color: AppColors.gray500),
+                            )
+                          else if (_currentLocation.first != null && _currentLocation.second != null)
+                            Text(
+                              '${_currentLocation.first!.toStringAsFixed(6)}, ${_currentLocation.second!.toStringAsFixed(6)}',
+                              style: const TextStyle(fontSize: 12, color: AppColors.gray500),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ]),
+                  const Padding(
+                    padding: EdgeInsets.only(left: 8, top: 6, bottom: 6),
+                    child: Icon(Icons.arrow_downward, size: 14, color: AppColors.gray400),
+                  ),
+                  // Hasta: dirección de destino
+                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Icon(Icons.location_on, size: 16, color: AppColors.statusCompleted),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.line.destinationAddress != null && widget.line.destinationAddress!.isNotEmpty
+                                ? 'Hasta: ${widget.line.destinationAddress}'
+                                : 'Hasta: ${widget.line.partnerId.name.isNotEmpty ? widget.line.partnerId.name : 'Destino'}',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.subtextColor),
+                          ),
+                          if (widget.line.street != null && widget.line.street!.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(widget.line.street!, style: const TextStyle(fontSize: 13)),
+                          ],
+                          if (widget.line.city != null && widget.line.city!.isNotEmpty)
+                            Text(widget.line.city!, style: const TextStyle(fontSize: 11, color: AppColors.gray600)),
+                        ],
+                      ),
+                    ),
+                  ]),
+                ],
+              ),
+            ),
             if (widget.line.notes != null && widget.line.notes!.isNotEmpty) ...[
               const SizedBox(height: 8),
               Container(

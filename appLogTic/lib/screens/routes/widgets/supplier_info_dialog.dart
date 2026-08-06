@@ -233,8 +233,8 @@ class _SupplierInfoDialogState extends State<SupplierInfoDialog> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Section 1: Location & Obra
-                    _SectionTitle(icon: Icons.location_on_rounded, title: 'Ubicación y Dirección'),
+                    // Section 1: Desde / Hasta (Origen / Destino)
+                    _SectionTitle(icon: Icons.alt_route_rounded, title: 'Ruta — Desde / Hasta'),
                     const SizedBox(height: 8),
                     Container(
                       width: double.infinity,
@@ -267,15 +267,49 @@ class _SupplierInfoDialogState extends State<SupplierInfoDialog> {
                             ),
                             Divider(height: 16, color: borderColor),
                           ],
+                          // Desde: ubicación actual del conductor
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(Icons.place_outlined, size: 16, color: subtextColor),
+                              const Icon(Icons.trip_origin, size: 16, color: AppColors.statusInProgress),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+                                    Text(
+                                      'Desde: Mi ubicación',
+                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: subtextColor),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Tu posición actual (GPS)',
+                                      style: TextStyle(fontSize: 13, color: textColor),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.only(left: 8, top: 6, bottom: 6),
+                            child: Icon(Icons.arrow_downward, size: 14, color: AppColors.gray400),
+                          ),
+                          // Hasta: dirección de destino
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(Icons.location_on, size: 16, color: AppColors.statusCompleted),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Hasta: ${line.partnerId.name.isNotEmpty ? line.partnerId.name : 'Destino'}',
+                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: subtextColor),
+                                    ),
+                                    const SizedBox(height: 2),
                                     SelectableText(
                                       (line.street != null && line.street!.isNotEmpty)
                                           ? line.street!

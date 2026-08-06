@@ -292,13 +292,17 @@ class _LogticAppState extends State<LogticApp> {
         ChangeNotifierProvider(create: (_) => NotificationBadgeProvider()),
         ChangeNotifierProvider.value(value: widget.themeProvider),
       ],
-      child: MaterialApp.router(
-        title: 'LogTic',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: widget.themeProvider.themeMode,
-        routerConfig: _router,
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp.router(
+            title: 'LogTic',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeProvider.themeMode,
+            routerConfig: _router,
+          );
+        },
       ),
     );
   }

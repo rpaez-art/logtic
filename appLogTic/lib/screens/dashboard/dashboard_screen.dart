@@ -10,6 +10,7 @@ import '../../providers/odoo_provider.dart';
 import '../../widgets/theme_toggle_button.dart';
 import '../../widgets/attachment_tile.dart';
 import '../routes/widgets/supplier_info_dialog.dart';
+import '../../services/api/retrofit_client.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -488,20 +489,20 @@ class _PeriodSelector extends StatelessWidget {
             child: FilterChip(
               selected: isSelected,
               onSelected: (_) => onPeriodSelected(period.$1),
-              avatar: Icon(period.$3, size: 16, color: isSelected ? AppColors.white : AppColors.corpDarkGray),
+              avatar: Icon(period.$3, size: 16, color: isSelected ? AppColors.white : context.onSurfaceColor),
               label: Text(
                 period.$2,
                 style: TextStyle(
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  color: isSelected ? AppColors.white : AppColors.corpDarkGray,
+                  color: isSelected ? AppColors.white : context.onSurfaceColor,
                   fontSize: 13,
                 ),
               ),
               selectedColor: AppColors.corpGreen,
               checkmarkColor: AppColors.white,
-              backgroundColor: AppColors.white,
+              backgroundColor: context.containerColor,
               side: BorderSide(
-                color: isSelected ? AppColors.corpGreen : AppColors.gray300,
+                color: isSelected ? AppColors.corpGreen : context.borderColor,
                 width: isSelected ? 1.5 : 1,
               ),
             ),
@@ -687,8 +688,8 @@ class _PerformanceMetric extends StatelessWidget {
       children: [
         Icon(icon, color: AppColors.corpGreen, size: 28),
         const SizedBox(height: 8),
-        Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.corpDarkGray)),
-        Text(label, style: TextStyle(fontSize: 11, color: AppColors.corpDarkGray.withValues(alpha: 0.7))),
+        Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: context.onSurfaceColor)),
+        Text(label, style: TextStyle(fontSize: 11, color: context.onSurfaceColor.withValues(alpha: 0.7))),
       ],
     );
   }
@@ -705,7 +706,7 @@ class _AdminActionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.white,
+      color: context.containerColor,
       borderRadius: BorderRadius.circular(16),
       elevation: 1,
       child: InkWell(
@@ -724,7 +725,7 @@ class _AdminActionCard extends StatelessWidget {
                 child: Icon(icon, color: color, size: 24),
               ),
               const SizedBox(height: 8),
-              Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.gray700)),
+              Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.onSurfaceColor)),
             ],
           ),
         ),
@@ -882,7 +883,7 @@ class _TodayStatItem extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           '$value $label',
-          style: const TextStyle(fontSize: 14, color: AppColors.gray700),
+          style: TextStyle(fontSize: 14, color: context.onSurfaceColor),
         ),
       ],
     );
@@ -1098,7 +1099,7 @@ class _DashboardHistoryCardState extends State<_DashboardHistoryCard> {
           if (_isExpanded)
             Container(
               decoration: BoxDecoration(
-                color: AppColors.gray50.withValues(alpha: 0.7),
+                color: context.containerColor.withValues(alpha: 0.7),
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(16),
                   bottomRight: Radius.circular(16),
@@ -1159,6 +1160,29 @@ class _DashboardLineCard extends StatefulWidget {
 
 class _DashboardLineCardState extends State<_DashboardLineCard> {
   bool _showProducts = false;
+  String? _originAddress;
+  String? _destinationAddress;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchMapInfo();
+  }
+
+  Future<void> _fetchMapInfo() async {
+    try {
+      final info = await RetrofitClient().getMapInfo(widget.line.id);
+      if (info['success'] == true && info['data'] != null) {
+        final allAddresses = info['data']['all_addresses'];
+        if (allAddresses != null && mounted) {
+          setState(() {
+            _originAddress = allAddresses['origin_address'];
+            _destinationAddress = allAddresses['destination_address'];
+          });
+        }
+      }
+    } catch (_) {}
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1264,26 +1288,83 @@ class _DashboardLineCardState extends State<_DashboardLineCard> {
                   ),
                 ],
               ),
-              if (line.street != null && line.street!.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                Row(
+              // ── Desde / Hasta (Origen / Destino) ──
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: context.containerColor,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: context.borderColor),
+                ),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.place, size: 14, color: AppColors.primary),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(line.street!, style: const TextStyle(fontSize: 12)),
-                          if (line.city != null && line.city!.isNotEmpty)
-                            Text(line.city!, style: const TextStyle(fontSize: 10, color: AppColors.gray500)),
-                        ],
-                      ),
+                    // Desde
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.trip_origin, size: 14, color: AppColors.statusInProgress),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (_originAddress != null && _originAddress!.isNotEmpty)
+                                Text(
+                                  _originAddress!,
+                                  style: const TextStyle(fontSize: 11, color: AppColors.gray500),
+                                )
+                              else ...[
+                                Text(
+                                  'Desde: Mi ubicación',
+                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: context.subtextColor),
+                                ),
+                                const Text(
+                                  'Tu posición actual (GPS)',
+                                  style: TextStyle(fontSize: 11, color: AppColors.gray500),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.only(left: 7, top: 4, bottom: 4),
+                      child: Icon(Icons.arrow_downward, size: 12, color: AppColors.gray400),
+                    ),
+                    // Hasta
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.location_on, size: 14, color: AppColors.statusCompleted),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _destinationAddress != null && _destinationAddress!.isNotEmpty
+                                    ? 'Hasta: $_destinationAddress'
+                                    : 'Hasta: ${line.partnerId.name.isNotEmpty ? line.partnerId.name : 'Destino'}',
+                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: context.subtextColor),
+                              ),
+                              if (line.street != null && line.street!.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(line.street!, style: const TextStyle(fontSize: 12)),
+                              ],
+                              if (line.city != null && line.city!.isNotEmpty)
+                                Text(line.city!, style: const TextStyle(fontSize: 10, color: AppColors.gray500)),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
 
               // Notes/comments
               if (line.notes != null && line.notes!.isNotEmpty) ...[
@@ -1489,7 +1570,7 @@ class _EmptyHistoryCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.fromLTRB(20, 8, 20, 20),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      color: AppColors.gray50,
+      color: context.containerColor,
       elevation: 0,
       child: const Padding(
         padding: EdgeInsets.all(40),

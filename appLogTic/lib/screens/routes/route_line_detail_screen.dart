@@ -207,19 +207,67 @@ class _RouteLineDetailScreenState extends State<RouteLineDetailScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Address card
-          if (line.street != null && line.street!.isNotEmpty)
-            _InfoCard(
-              icon: Icons.place,
-              title: 'Dirección',
-              children: [
-                Text(line.street!, style: const TextStyle(fontSize: 15)),
-                if (line.city != null && line.city!.isNotEmpty)
-                  Text(line.city!, style: TextStyle(fontSize: 13, color: context.subtextColor)),
-              ],
-            ),
-          if (line.street != null && line.street!.isNotEmpty)
-            const SizedBox(height: 12),
+          // ── Desde / Hasta (Origen / Destino) ──
+          _InfoCard(
+            icon: Icons.alt_route,
+            title: 'Ruta',
+            children: [
+              // Desde: ubicación actual del conductor
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.trip_origin, size: 16, color: AppColors.statusInProgress),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Desde: Mi ubicación',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.subtextColor),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Tu posición actual (GPS)',
+                          style: TextStyle(fontSize: 13, color: context.onSurfaceColor),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const Padding(
+                padding: EdgeInsets.only(left: 8, top: 6, bottom: 6),
+                child: Icon(Icons.arrow_downward, size: 14, color: AppColors.gray400),
+              ),
+              // Hasta: dirección de destino
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.location_on, size: 16, color: AppColors.statusCompleted),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Hasta: ${line.partnerId.name.isNotEmpty ? line.partnerId.name : 'Destino'}',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.subtextColor),
+                        ),
+                        if (line.street != null && line.street!.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(line.street!, style: const TextStyle(fontSize: 15)),
+                        ],
+                        if (line.city != null && line.city!.isNotEmpty)
+                          Text(line.city!, style: TextStyle(fontSize: 13, color: context.subtextColor)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
 
           // Obra
           if (line.obra != null && line.obra!.isNotEmpty)

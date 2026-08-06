@@ -250,6 +250,12 @@ class RetrofitClient {
     return RouteHistoryLinesResponse.fromJson(jsonDecode(response.body));
   }
 
+  // Map info
+  Future<Map<String, dynamic>> getMapInfo(int lineId) async {
+    final response = await _request('GET', '/api/routes/line/$lineId/map-info');
+    return jsonDecode(response.body);
+  }
+
   // Attachments
   Future<LineAttachmentsResponse> getLineAttachments(int lineId) async {
     final response = await _request('GET', '${AppConfig.apiLineAttachments}/$lineId');

@@ -8,6 +8,7 @@ import '../../providers/odoo_provider.dart';
 import '../../widgets/theme_toggle_button.dart';
 import '../../widgets/attachment_tile.dart';
 import '../routes/widgets/supplier_info_dialog.dart';
+import '../../services/api/retrofit_client.dart';
 
 class RouteHistoryScreen extends StatefulWidget {
   const RouteHistoryScreen({super.key});
@@ -25,6 +26,7 @@ class _RouteHistoryScreenState extends State<RouteHistoryScreen> {
       final odoo = context.read<OdooProvider>();
       if (auth.currentUser != null) {
         odoo.fetchRoutesHistory(auth.currentUser!.driverId, limit: 50);
+        odoo.fetchHistoryStats(auth.currentUser!.driverId);
       }
     });
   }
@@ -35,13 +37,13 @@ class _RouteHistoryScreenState extends State<RouteHistoryScreen> {
     final odoo = context.watch<OdooProvider>();
 
     final routes = odoo.routesHistory;
-    final totalRoutes = routes.length;
-    final totalDeliveries = routes.fold(0, (sum, item) => sum + item.totalDeliveries);
-    final totalCompleted = routes.fold(0, (sum, item) => sum + item.completedDeliveries);
-    final routesWithDuration = routes.where((item) => item.durationMinutes > 0).toList();
-    final avgDuration = routesWithDuration.isNotEmpty
-        ? routesWithDuration.fold(0.0, (sum, item) => sum + item.durationMinutes) / routesWithDuration.length
-        : 0.0;
+    final stats = odoo.historyStats?.summary;
+    final performance = odoo.historyStats?.performance;
+    
+    final totalRoutes = stats?.totalRoutes ?? 0;
+    final totalDeliveries = stats?.totalDeliveries ?? 0;
+    final totalCompleted = stats?.completedDeliveries ?? 0;
+    final avgDuration = performance?.avgRouteTimeFormatted ?? '--';
 
     return Scaffold(
       appBar: AppBar(
@@ -53,6 +55,7 @@ class _RouteHistoryScreenState extends State<RouteHistoryScreen> {
             onPressed: () {
               if (auth.currentUser != null) {
                 odoo.fetchRoutesHistory(auth.currentUser!.driverId, limit: 50);
+                odoo.fetchHistoryStats(auth.currentUser!.driverId);
               }
             },
             icon: const Icon(Icons.refresh),
@@ -79,7 +82,7 @@ class _RouteHistoryScreenState extends State<RouteHistoryScreen> {
                 totalRoutes: totalRoutes,
                 totalDeliveries: totalDeliveries,
                 totalCompleted: totalCompleted,
-                avgDurationMinutes: avgDuration,
+                avgDuration: avgDuration,
               ),
             ),
             if (odoo.isLoadingHistory)
@@ -122,13 +125,13 @@ class _HistorySummarySection extends StatelessWidget {
   final int totalRoutes;
   final int totalDeliveries;
   final int totalCompleted;
-  final double avgDurationMinutes;
+  final String avgDuration;
 
   const _HistorySummarySection({
     required this.totalRoutes,
     required this.totalDeliveries,
     required this.totalCompleted,
-    required this.avgDurationMinutes,
+    required this.avgDuration,
   });
 
   @override
@@ -144,7 +147,7 @@ class _HistorySummarySection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Resumen General',
+            'Resumen General (Todo el tiempo)',
             style: TextStyle(color: AppColors.white, fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
@@ -154,20 +157,12 @@ class _HistorySummarySection extends StatelessWidget {
               _HistoryStat(value: '$totalRoutes', label: 'Rutas', icon: Icons.route_outlined),
               _HistoryStat(value: '$totalDeliveries', label: 'Entregas', icon: Icons.local_shipping_outlined),
               _HistoryStat(value: '$totalCompleted', label: 'Completadas', icon: Icons.check_circle_outlined),
-              _HistoryStat(value: _formatDuration(avgDurationMinutes), label: 'Prom. Dur.', icon: Icons.timer_outlined),
+              _HistoryStat(value: avgDuration.isEmpty ? '--' : avgDuration, label: 'Prom. Dur.', icon: Icons.timer_outlined),
             ],
           ),
         ],
       ),
     );
-  }
-
-  String _formatDuration(double minutes) {
-    if (minutes <= 0) return '--';
-    if (minutes < 60) return '${minutes.toInt()}m';
-    final hours = minutes ~/ 60;
-    final mins = (minutes % 60).toInt();
-    return mins > 0 ? '${hours}h ${mins}m' : '${hours}h';
   }
 }
 
@@ -455,14 +450,32 @@ class _HistoryLineCardState extends State<_HistoryLineCard> {
   bool _showProducts = false;
   bool _isLoadingAttachments = false;
   List<AttachmentData> _attachments = [];
+  String? _originAddress;
+  String? _destinationAddress;
 
   @override
   void initState() {
     super.initState();
+    _fetchMapInfo();
     _attachments = widget.line.attachments ?? [];
     if (_attachments.isEmpty) {
       _fetchAttachments();
     }
+  }
+
+  Future<void> _fetchMapInfo() async {
+    try {
+      final info = await RetrofitClient().getMapInfo(widget.line.id);
+      if (info['success'] == true && info['data'] != null) {
+        final allAddresses = info['data']['all_addresses'];
+        if (allAddresses != null && mounted) {
+          setState(() {
+            _originAddress = allAddresses['origin_address'];
+            _destinationAddress = allAddresses['destination_address'];
+          });
+        }
+      }
+    } catch (_) {}
   }
 
   Future<void> _fetchAttachments() async {
@@ -589,22 +602,77 @@ class _HistoryLineCardState extends State<_HistoryLineCard> {
                 ),
               ],
             ),
-            // Address
-            if (line.street != null && line.street!.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Icon(Icons.place, size: 16, color: AppColors.primary),
-                const SizedBox(width: 6),
-                Expanded(child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(line.street!, style: const TextStyle(fontSize: 13)),
-                    if (line.city != null && line.city!.isNotEmpty)
-                      Text(line.city!, style: const TextStyle(fontSize: 11, color: AppColors.gray600)),
-                  ],
-                )),
-              ]),
-            ],
+            // ── Desde / Hasta (Origen / Destino) ──
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: context.containerColor,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: context.borderColor),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Desde: ubicación actual del conductor
+                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Icon(Icons.trip_origin, size: 16, color: AppColors.statusInProgress),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (_originAddress != null && _originAddress!.isNotEmpty)
+                            Text(
+                              _originAddress!,
+                              style: const TextStyle(fontSize: 12, color: AppColors.gray500),
+                            )
+                          else ...[
+                            Text(
+                              'Desde: Mi ubicación',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.subtextColor),
+                            ),
+                            const Text(
+                              'Tu posición actual (GPS)',
+                              style: TextStyle(fontSize: 12, color: AppColors.gray500),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ]),
+                  const Padding(
+                    padding: EdgeInsets.only(left: 8, top: 6, bottom: 6),
+                    child: Icon(Icons.arrow_downward, size: 14, color: AppColors.gray400),
+                  ),
+                  // Hasta: dirección de destino
+                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Icon(Icons.location_on, size: 16, color: AppColors.statusCompleted),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _destinationAddress != null && _destinationAddress!.isNotEmpty
+                                ? 'Hasta: $_destinationAddress'
+                                : 'Hasta: ${line.partnerId.name.isNotEmpty ? line.partnerId.name : 'Destino'}',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.subtextColor),
+                          ),
+                          if (line.street != null && line.street!.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(line.street!, style: const TextStyle(fontSize: 13)),
+                          ],
+                          if (line.city != null && line.city!.isNotEmpty)
+                            Text(line.city!, style: const TextStyle(fontSize: 11, color: AppColors.gray600)),
+                        ],
+                      ),
+                    ),
+                  ]),
+                ],
+              ),
+            ),
             // Notes
             if (line.notes != null && line.notes!.isNotEmpty) ...[
               const SizedBox(height: 8),

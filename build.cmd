@@ -34,6 +34,9 @@ call "%FLUTTER_CMD%" clean
 echo [*] Obteniendo dependencias...
 call "%FLUTTER_CMD%" pub get
 
+echo [*] Solucionando bug de certificados de SQLite3/Dart en Windows...
+powershell -Command "Invoke-WebRequest https://github.com/simolus3/sqlite3.dart/releases/download/sqlite3-3.5.0/libsqlite3.arm.android.so -UseBasicParsing > NUL" 2>NUL
+
 echo [*] Compilando APK Release Firmado...
 call "%FLUTTER_CMD%" build apk --release
 

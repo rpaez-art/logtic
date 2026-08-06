@@ -22,6 +22,9 @@ class OdooProvider extends ChangeNotifier {
   bool _isLoadingStats = false;
   String _statsError = '';
 
+  DriverStatsData? _historyStats;
+  bool _isLoadingHistoryStats = false;
+
   List<RouteHistoryItem> _routesHistory = [];
   bool _isLoadingHistory = false;
 
@@ -50,6 +53,8 @@ class OdooProvider extends ChangeNotifier {
   DriverStatsData? get driverStats => _driverStats;
   bool get isLoadingStats => _isLoadingStats;
   String get statsError => _statsError;
+  DriverStatsData? get historyStats => _historyStats;
+  bool get isLoadingHistoryStats => _isLoadingHistoryStats;
   List<RouteHistoryItem> get routesHistory => _routesHistory;
   bool get isLoadingHistory => _isLoadingHistory;
   bool isHistoryLineLoading(int routeId) => _loadingHistoryLineIds.contains(routeId);
@@ -435,6 +440,23 @@ class OdooProvider extends ChangeNotifier {
       _statsError = e.toString();
     } finally {
       _isLoadingStats = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchHistoryStats(int driverId, {String period = 'all'}) async {
+    try {
+      _isLoadingHistoryStats = true;
+      notifyListeners();
+
+      final response = await _client.getDriverStats(driverId.toString(), period: period);
+      if (response.success) {
+        _historyStats = response.data;
+      }
+    } catch (e) {
+      debugPrint('Error fetching history stats: $e');
+    } finally {
+      _isLoadingHistoryStats = false;
       notifyListeners();
     }
   }
