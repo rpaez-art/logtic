@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:go_router/go_router.dart';
+import 'firebase_options.dart';
 import 'config/theme.dart';
 import 'config/router.dart';
 import 'widgets/notification_banner.dart';
@@ -22,7 +23,9 @@ import 'providers/theme_provider.dart';
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   await LocalNotificationService.instance.init();
 
   // Extraer título y cuerpo del payload de datos si existe, o usar uno por defecto
@@ -48,7 +51,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   } catch (_) {}
 
   // Store route data for when app opens
-  if (message.data.containsKey('route')) {
+  if (message.data.containsKey('route') || message.data.containsKey('route_ids')) {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('pending_route', jsonEncode(message.data));
   }
@@ -65,7 +68,9 @@ void main() async {
 
   // Safe Firebase setup
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
     final messaging = FirebaseMessaging.instance;
     await messaging.requestPermission();
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
@@ -125,6 +130,9 @@ class _LogticAppState extends State<LogticApp> {
     _router = AppRouter(authProvider: widget.authProvider).router;
     _initDeepLinks();
 
+    // Escuchar rotación de tokens FCM
+    widget.authProvider.listenTokenRefresh();
+
     // Handle notification taps from local notifications (foreground)
     LocalNotificationService.instance.onNotificationTap = (data) {
       _handleDeepLink(data);
@@ -145,11 +153,21 @@ class _LogticAppState extends State<LogticApp> {
       onSync: (driverId) async {
         final odoo = context.read<OdooProvider>();
         final routeProvider = context.read<RouteProvider>();
-        final routes = await odoo.syncRoutesFromOdoo(driverId, silent: true);
-        if (routes.isNotEmpty) {
-          routeProvider.setRoutesFromOdoo(routes);
+        final badgeProvider = context.read<NotificationBadgeProvider>();
+
+        // 1. Verificar si hay rutas nuevas (endpoint ligero)
+        final hasNew = await odoo.checkNewRoutes(driverId);
+        if (hasNew) {
+          // 2. Solo sincronizar si hay rutas nuevas
+          final routes = await odoo.syncRoutesFromOdoo(driverId, silent: true);
+          if (routes.isNotEmpty) {
+            routeProvider.setRoutesFromOdoo(routes);
+            // 3. Incrementar badge si hay rutas nuevas
+            badgeProvider.increment();
+          }
+          return routes.length;
         }
-        return routes.length;
+        return 0;
       },
     );
     _bgSync!.start();
@@ -186,7 +204,11 @@ class _LogticAppState extends State<LogticApp> {
 
     final notification = message.notification;
     final title = notification?.title ?? message.data['title'] ?? 'Nueva notificación';
-    final body = notification?.body ?? message.data['body'] ?? '';
+    // Mejora 7: Unificar manejo de route_count en foreground
+    String body = notification?.body ?? message.data['body'] ?? '';
+    if (message.data.containsKey('route_count')) {
+      body = 'Te han asignado ${message.data['route_count']} nueva(s) ruta(s).';
+    }
     final route = message.data['route'] as String?;
 
     // 1. Show local system notification (visible in notification shade)
@@ -234,7 +256,18 @@ class _LogticAppState extends State<LogticApp> {
   }
 
   void _handleDeepLink(Map<String, dynamic> data) {
-    final route = data['route'] as String?;
+    // El backend Odoo envía 'route_ids' (IDs separados por coma), no 'route'.
+    // Construimos el deep link desde route_ids si no viene 'route'.
+    String? route = data['route'] as String?;
+    if (route == null && data.containsKey('route_ids')) {
+      final routeIds = data['route_ids'] as String?;
+      if (routeIds != null && routeIds.isNotEmpty) {
+        final firstId = routeIds.split(',').first.trim();
+        if (firstId.isNotEmpty) {
+          route = '/routes/$firstId';
+        }
+      }
+    }
     if (route == null || !mounted) return;
 
     // Ensure user is logged in before navigating

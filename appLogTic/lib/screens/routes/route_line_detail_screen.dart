@@ -6,6 +6,7 @@ import '../../models/odoo_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/odoo_provider.dart';
 import '../../widgets/attachment_tile.dart';
+import '../../widgets/theme_toggle_button.dart';
 import './widgets/supplier_info_dialog.dart';
 
 class RouteLineDetailScreen extends StatefulWidget {
@@ -80,6 +81,12 @@ class _RouteLineDetailScreenState extends State<RouteLineDetailScreen> {
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
         ),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 4),
+            child: AnimatedThemeToggle(),
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

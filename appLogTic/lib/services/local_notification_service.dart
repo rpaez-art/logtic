@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 /// Handles displaying FCM push notifications as local system notifications
@@ -138,7 +139,16 @@ class LocalNotificationService {
   }
 
   /// Generate a stable notification ID from a string (e.g. messageId).
+  /// Uses FNV-1a hash for stability across app restarts (unlike Dart's hashCode).
   static int generateId(String messageId) {
-    return messageId.hashCode & 0x7FFFFFFF; // ensure positive
+    // FNV-1a 32-bit hash
+    var hash = 0x811c9dc5;
+    final bytes = Uint8List.fromList(utf8.encode(messageId));
+    for (final byte in bytes) {
+      hash ^= byte;
+      hash *= 0x01000193;
+      hash &= 0xFFFFFFFF; // keep within 32 bits
+    }
+    return hash & 0x7FFFFFFF; // ensure positive
   }
 }

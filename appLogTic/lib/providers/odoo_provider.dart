@@ -85,6 +85,18 @@ class OdooProvider extends ChangeNotifier {
     return result;
   }
 
+  /// Verifica si hay rutas nuevas asignadas desde un timestamp.
+  /// Retorna `true` si hay rutas nuevas.
+  Future<bool> checkNewRoutes(int driverId, {String? since}) async {
+    try {
+      final response = await _client.checkNewRoutes(driverId.toString(), since: since);
+      return response.success && response.data?.hasNew == true;
+    } catch (e) {
+      debugPrint('Error checking new routes: $e');
+      return false;
+    }
+  }
+
   Future<List<RouteModel>> syncRoutesFromOdoo(int? driverId, {bool silent = false}) async {
     debugPrint('=== ${silent ? "BACKGROUND" : "MANUAL"} SINCRONIZACIÓN ===');
     debugPrint('Driver ID: $driverId');

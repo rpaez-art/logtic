@@ -6,7 +6,6 @@ import '../utils/tab_transition.dart';
 import '../models/user.dart';
 import '../providers/auth_provider.dart';
 import '../providers/notification_badge_provider.dart';
-import '../providers/theme_provider.dart';
 import '../providers/route_provider.dart';
 import '../models/route.dart';
 import '../widgets/animated_layout_switcher.dart';
@@ -87,13 +86,7 @@ class _ShellScreenState extends State<ShellScreen> {
           layout = Scaffold(
             key: const ValueKey('layout_phone'),
             body: widget.child,
-            bottomNavigationBar: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _ThemeToggleStrip(),
-                _buildBottomNav(current, badgeCount),
-              ],
-            ),
+            bottomNavigationBar: _buildBottomNav(current, badgeCount),
           );
         } else if (constraints.maxWidth >= _railBreakpoint) {
           // ── Wide tablet / landscape layout: NavigationRail permanent ──
@@ -410,41 +403,6 @@ class _ShellScreenState extends State<ShellScreen> {
                     },
                   ),
                 ],
-              ],
-            ),
-          ),
-
-          // ── Dark Mode Toggle ──
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Row(
-              children: [
-                Icon(
-                  context.watch<ThemeProvider>().isDarkMode
-                      ? Icons.dark_mode_rounded
-                      : Icons.light_mode_rounded,
-                  size: 20,
-                  color: AppColors.gray600,
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    'Tema oscuro',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.gray700,
-                    ),
-                  ),
-                ),
-                Switch(
-                  value: context.watch<ThemeProvider>().isDarkMode,
-                  onChanged: (_) =>
-                      context.read<ThemeProvider>().toggle(),
-                  activeThumbColor: AppColors.corpGold,
-                  activeTrackColor:
-                      AppColors.corpGold.withValues(alpha: 0.4),
-                ),
               ],
             ),
           ),
@@ -951,53 +909,6 @@ class _ExpandableRutasItemState extends State<_ExpandableRutasItem> {
   }
 }
 
-/// ── Thin theme toggle strip shown above BottomNav on phones ──
-class _ThemeToggleStrip extends StatelessWidget {
-  const _ThemeToggleStrip();
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = context.watch<ThemeProvider>().isDarkMode;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border(
-          top: BorderSide(color: AppColors.gray200.withValues(alpha: 0.5)),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-            size: 16,
-            color: AppColors.gray500,
-          ),
-          const SizedBox(width: 8),
-          const Text(
-            'Tema oscuro',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.gray500,
-            ),
-          ),
-          const SizedBox(width: 4),
-          SizedBox(
-            height: 28,
-            child: Switch(
-              value: isDark,
-              onChanged: (_) => context.read<ThemeProvider>().toggle(),
-              activeThumbColor: AppColors.corpGold,
-              activeTrackColor: AppColors.corpGold.withValues(alpha: 0.4),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// ── Compact rail header: avatar + name + route status ──
 class _RailHeader extends StatelessWidget {
   final User? user;
@@ -1123,8 +1034,6 @@ class _RailTrailing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = context.watch<ThemeProvider>().isDarkMode;
-
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
@@ -1139,18 +1048,6 @@ class _RailTrailing extends StatelessWidget {
               tooltip: 'Panel de administración — monitorea conductores, gestiona usuarios y configura el sistema',
               onPressed: () => _showAdminMenu(context),
             ),
-          // Dark mode toggle
-          IconButton(
-            icon: Icon(
-              isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-            ),
-            iconSize: 20,
-            color: AppColors.gray500,
-            tooltip: isDark
-                ? 'Cambiar a modo claro — interfaz con fondo claro'
-                : 'Cambiar a modo oscuro — interfaz con fondo oscuro',
-            onPressed: () => context.read<ThemeProvider>().toggle(),
-          ),
           // Logout
           IconButton(
             icon: const Icon(Icons.logout_rounded),

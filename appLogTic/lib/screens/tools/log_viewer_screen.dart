@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../config/theme.dart';
 import '../../services/log_service.dart';
+import '../../widgets/theme_toggle_button.dart';
 
 /// Screen that displays the in-memory ring buffer of structured logs
 /// and allows filtering / exporting.
@@ -41,6 +42,10 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
               LogService.instance.clear();
               setState(() {});
             },
+          ),
+          const Padding(
+            padding: EdgeInsets.only(right: 4),
+            child: AnimatedThemeToggle(),
           ),
         ],
       ),

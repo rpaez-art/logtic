@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -34,6 +35,19 @@ class AuthProvider extends ChangeNotifier {
     final link = _pendingDeepLink;
     _pendingDeepLink = null;
     return link;
+  }
+
+  /// Escucha rotación de tokens FCM y los re-registra automáticamente
+  void listenTokenRefresh() {
+    _firebaseMessaging.onTokenRefresh.listen((newToken) async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(AppConfig.prefsFcmToken, newToken);
+      await prefs.setBool(AppConfig.prefsFcmTokenSent, false);
+      final driverId = _currentUser?.driverId;
+      if (driverId != null && driverId > 0) {
+        await _registerFcmToken(driverId, _currentUser?.username);
+      }
+    });
   }
 
   void updateUsername(String value) {
@@ -200,7 +214,7 @@ class AuthProvider extends ChangeNotifier {
         final request = FcmTokenRequest(
           driverId: driverId,
           token: token,
-          platform: 'android',
+          platform: Platform.isIOS ? 'ios' : 'android',
           username: username,
         );
         await _client.registerFcmToken(request);
