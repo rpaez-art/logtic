@@ -329,7 +329,6 @@ class HistoryLineCard extends StatefulWidget {
 
 class _HistoryLineCardState extends State<HistoryLineCard> {
   bool _showProducts = false;
-  bool _isLoadingAttachments = false;
   List<AttachmentData> _attachments = [];
 
   @override

@@ -5,7 +5,6 @@ import '../../../config/theme.dart';
 import '../../../models/route.dart';
 import '../../../models/user.dart';
 import '../../../providers/auth_provider.dart';
-import '../../../providers/notification_badge_provider.dart';
 import '../../../providers/route_provider.dart';
 
 /// Perfil del encabezado del drawer

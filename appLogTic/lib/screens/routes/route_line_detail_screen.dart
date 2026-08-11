@@ -212,7 +212,7 @@ class _RouteLineDetailScreenState extends State<RouteLineDetailScreen> {
             icon: Icons.alt_route,
             title: 'Ruta',
             children: [
-              // Desde: ubicación actual del conductor
+              // Desde: dirección de origen
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -223,14 +223,16 @@ class _RouteLineDetailScreenState extends State<RouteLineDetailScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Desde: Mi ubicación',
+                          'Desde: ${line.originAddress != null && line.originAddress!.isNotEmpty ? line.originAddress! : 'Mi ubicación'}',
                           style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.subtextColor),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Tu posición actual (GPS)',
-                          style: TextStyle(fontSize: 13, color: context.onSurfaceColor),
-                        ),
+                        if (line.originAddress == null || line.originAddress!.isEmpty)
+                          const SizedBox(height: 2),
+                        if (line.originAddress == null || line.originAddress!.isEmpty)
+                          Text(
+                            'Tu posición actual (GPS)',
+                            style: TextStyle(fontSize: 13, color: context.onSurfaceColor),
+                          ),
                       ],
                     ),
                   ),
@@ -251,7 +253,9 @@ class _RouteLineDetailScreenState extends State<RouteLineDetailScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Hasta: ${line.partnerId.name.isNotEmpty ? line.partnerId.name : 'Destino'}',
+                          line.destinationAddress != null && line.destinationAddress!.isNotEmpty
+                              ? 'Hasta: ${line.destinationAddress}'
+                              : 'Hasta: ${line.partnerId.name.isNotEmpty ? line.partnerId.name : 'Destino'}',
                           style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.subtextColor),
                         ),
                         if (line.street != null && line.street!.isNotEmpty) ...[
