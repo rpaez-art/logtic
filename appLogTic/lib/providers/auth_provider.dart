@@ -9,7 +9,16 @@ import '../services/api/retrofit_client.dart';
 
 class AuthProvider extends ChangeNotifier {
   final RetrofitClient _client = RetrofitClient();
-  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+  FirebaseMessaging? _firebaseMessaging;
+  bool _firebaseUnavailable = false;
+
+  AuthProvider({FirebaseMessaging? firebaseMessaging}) {
+    try {
+      _firebaseMessaging = firebaseMessaging ?? FirebaseMessaging.instance;
+    } catch (_) {
+      _firebaseUnavailable = true;
+    }
+  }
 
   User? _currentUser;
   bool _isLoading = false;
@@ -39,7 +48,8 @@ class AuthProvider extends ChangeNotifier {
 
   /// Escucha rotación de tokens FCM y los re-registra automáticamente
   void listenTokenRefresh() {
-    _firebaseMessaging.onTokenRefresh.listen((newToken) async {
+    if (_firebaseUnavailable || _firebaseMessaging == null) return;
+    _firebaseMessaging!.onTokenRefresh.listen((newToken) async {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(AppConfig.prefsFcmToken, newToken);
       await prefs.setBool(AppConfig.prefsFcmTokenSent, false);
@@ -200,8 +210,9 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> _registerFcmToken(int driverId, String? username) async {
+    if (_firebaseUnavailable || _firebaseMessaging == null) return;
     try {
-      final token = await _firebaseMessaging.getToken();
+      final token = await _firebaseMessaging!.getToken();
       if (token == null) return;
 
       debugPrint('FCM Token obtained, registering...');
