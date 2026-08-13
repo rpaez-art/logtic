@@ -138,10 +138,11 @@ class _LogticAppState extends State<LogticApp> {
       _handleDeepLink(data);
     };
 
-    // Start background sync and request permissions after the widget tree is built
+    // Start background sync after the widget tree is built.
+    // Storage permission request was removed: logs now use the app-private
+    // documents directory, which requires no permissions on Android 10+.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initBackgroundSync();
-      LogService.instance.requestPermissionsAndInit();
     });
   }
 

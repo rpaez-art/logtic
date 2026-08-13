@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 /// Log severity level.
 enum LogLevel {
@@ -69,10 +68,15 @@ class LogService {
   static LogService get instance => _instance;
   LogService._();
 
-  static const int _ringSize = 500;
+  // Log files are stored in the app's private documents directory
+  // (e.g. /data/data/<package>/app_flutter) so no runtime storage
+  // permissions are required on Android (compatible with Android 10+).
+  static const String _logDirName = 'logtic_logs';
+
+  static final int _ringSize = 500;
 
   final List<LogEntry> _logs = [];
-  
+
   /// Minimum level to record. Entries below this are discarded.
   LogLevel minLevel = LogLevel.debug;
 
@@ -84,61 +88,34 @@ class LogService {
 
   // ── Initialization & Permissions ──
 
-  /// Initialize the logger. Only sets up the file if permissions are already granted.
-  /// Won't ask for permissions natively to prevent startup crash.
+  /// Initialize the logger. Sets up file logging in the app's private
+  /// documents directory. Does NOT request any permissions.
   Future<void> init() async {
-    if (kIsWeb || !Platform.isAndroid) return;
-    
+    if (_fileLoggingEnabled) return;
+
     try {
-      final hasManage = await Permission.manageExternalStorage.isGranted;
-      final hasStorage = await Permission.storage.isGranted;
-      
-      if (hasManage || hasStorage) {
-        await _setupFile();
-      } else {
-        debugPrint('LogService: No storage permissions yet. File logging pending.');
-      }
+      await _setupFile();
     } catch (e) {
       debugPrint('LogService init error: $e');
     }
   }
 
-  /// Request permissions and initialize file logging.
-  /// Safe to call after runApp.
-  Future<void> requestPermissionsAndInit() async {
-    if (kIsWeb || !Platform.isAndroid) return;
-
-    try {
-      debugPrint('LogService: Requesting storage permissions...');
-      var status = await Permission.storage.request();
-      if (!status.isGranted) {
-        status = await Permission.manageExternalStorage.request();
-      }
-
-      if (status.isGranted) {
-        await _setupFile();
-      } else {
-        debugPrint('LogService: Storage permission denied.');
-      }
-    } catch (e) {
-      debugPrint('LogService: Error requesting permissions: $e');
-    }
+  /// Logs directory path: `<app documents>/logtic_logs`
+  Future<Directory> _logsDirectory() async {
+    final docs = await getApplicationDocumentsDirectory();
+    return Directory('${docs.path}${Platform.pathSeparator}$_logDirName');
   }
 
   Future<void> _setupFile() async {
-    try {
-      final directory = Directory('/storage/emulated/0/Download/logtic_logs');
-      if (!await directory.exists()) {
-        await directory.create(recursive: true);
-      }
-      
-      final date = DateTime.now().toIso8601String().split('T').first;
-      _logFile = File('${directory.path}/log_$date.txt');
-      _fileLoggingEnabled = true;
-      info('SYSTEM', 'LogService file logging enabled in Download/logtic_logs');
-    } catch (e) {
-      debugPrint('LogService: Failed to setup log file: $e');
+    final directory = await _logsDirectory();
+    if (!await directory.exists()) {
+      await directory.create(recursive: true);
     }
+
+    final date = DateTime.now().toIso8601String().split('T').first;
+    _logFile = File('${directory.path}${Platform.pathSeparator}log_$date.txt');
+    _fileLoggingEnabled = true;
+    info('SYSTEM', 'LogService file logging enabled in ${directory.path}');
   }
 
   // ── Core logging ──
@@ -187,7 +164,7 @@ class LogService {
     );
     _logs.add(entry);
     if (_logs.length > _ringSize) _logs.removeAt(0);
-    
+
     debugPrint(entry.formatted);
 
     // Append exception to file if enabled
@@ -209,7 +186,7 @@ class LogService {
     final now = DateTime.now();
     final filename =
         'logtic_logs_${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}.txt';
-    final file = File('${dir.path}/$filename');
+    final file = File('${dir.path}${Platform.pathSeparator}$filename');
 
     final buffer = StringBuffer();
     buffer.writeln('=' * 60);

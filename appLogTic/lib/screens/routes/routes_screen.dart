@@ -466,19 +466,91 @@ class _RouteActivityCardState extends State<_RouteActivityCard> {
   Pair<double?, double?> _currentLocation = Pair(null, null);
   bool _showProducts = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _getCurrentLocation();
+  /// Requests the current location on demand (called when the driver
+  /// performs a delivery action). Returns true if a position was
+  /// obtained and [_currentLocation] was updated.
+  ///
+  /// If the permission is denied permanently or location services are
+  /// disabled, the user is warned with a dialog so they know geolocation
+  /// is unavailable.
+  Future<bool> _fetchCurrentLocation() async {
+    try {
+      // 1. Check that location services are enabled
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        _showLocationWarning(
+          'La ubicación del dispositivo está desactivada. '
+          'Actívala para registrar las coordenadas de la entrega.',
+          onOpenSettings: Geolocator.openLocationSettings,
+        );
+        return false;
+      }
+
+      // 2. Check / request permission
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        _showLocationWarning(
+          'El permiso de ubicación fue denegado permanentemente. '
+          'Actívalo desde los ajustes de la app para registrar las coordenadas de la entrega.',
+          onOpenSettings: Geolocator.openAppSettings,
+        );
+        return false;
+      }
+
+      if (permission == LocationPermission.denied) {
+        _showLocationWarning(
+          'Sin permiso de ubicación no se registrarán las coordenadas de la entrega.',
+        );
+        return false;
+      }
+
+      // 3. Get position
+      final position = await Geolocator.getCurrentPosition();
+      if (mounted) {
+        setState(() => _currentLocation = Pair(position.latitude, position.longitude));
+      }
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
-  Future<void> _getCurrentLocation() async {
-    try {
-      final permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) await Geolocator.requestPermission();
-      final position = await Geolocator.getCurrentPosition();
-      setState(() => _currentLocation = Pair(position.latitude, position.longitude));
-    } catch (_) {}
+  /// Warns the user that geolocation is unavailable.
+  /// If [onOpenSettings] is provided, a button to open the relevant
+  /// settings screen (GPS toggle or app settings) is shown.
+  void _showLocationWarning(String message, {VoidCallback? onOpenSettings}) {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.location_off, color: AppColors.statusIncomplete),
+            SizedBox(width: 8),
+            Expanded(child: Text('Ubicación no disponible')),
+          ],
+        ),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Entendido'),
+          ),
+          if (onOpenSettings != null)
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                onOpenSettings();
+              },
+              child: const Text('Abrir ajustes'),
+            ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -743,7 +815,9 @@ class _RouteActivityCardState extends State<_RouteActivityCard> {
       case 'pending':
         return [
           OutlinedButton.icon(
-            onPressed: () => widget.odoo.notifyLineStarted(widget.line.id, _currentLocation.first, _currentLocation.second),
+            onPressed: () {
+              _startLine();
+            },
             icon: const Icon(Icons.play_arrow, size: 18),
             label: const Text('Iniciar', style: TextStyle(fontSize: 13)),
             style: OutlinedButton.styleFrom(foregroundColor: AppColors.primary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
@@ -752,19 +826,21 @@ class _RouteActivityCardState extends State<_RouteActivityCard> {
       case 'in_progress':
         return [
           ElevatedButton.icon(
-            onPressed: () => widget.odoo.notifyLinePickedUp(widget.line.id, _currentLocation.first, _currentLocation.second),
+            onPressed: () {
+              _pickUpLine();
+            },
             icon: const Icon(Icons.local_shipping, size: 16),
             label: const Text('Recoger', style: TextStyle(fontSize: 11)),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.statusPickedUp, foregroundColor: AppColors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
           ),
           ElevatedButton.icon(
-            onPressed: () => _showPhotoDialog(context),
+            onPressed: _showPhotoDialog,
             icon: const Icon(Icons.camera_alt, size: 16),
             label: const Text('Finalizar', style: TextStyle(fontSize: 11)),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.statusCompleted, foregroundColor: AppColors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
           ),
           OutlinedButton.icon(
-            onPressed: () => _showIncompleteDialog(context),
+            onPressed: _showIncompleteDialog,
             icon: const Icon(Icons.warning, size: 16),
             label: const Text('Incompleta', style: TextStyle(fontSize: 11)),
             style: OutlinedButton.styleFrom(foregroundColor: AppColors.statusIncomplete, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
@@ -773,13 +849,13 @@ class _RouteActivityCardState extends State<_RouteActivityCard> {
       case 'picked_up':
         return [
           ElevatedButton.icon(
-            onPressed: () => _showPhotoDialog(context),
+            onPressed: _showPhotoDialog,
             icon: const Icon(Icons.camera_alt, size: 18),
             label: const Text('Finalizar con Foto', style: TextStyle(fontSize: 12)),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.statusCompleted, foregroundColor: AppColors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
           ),
           OutlinedButton.icon(
-            onPressed: () => _showIncompleteDialog(context),
+            onPressed: _showIncompleteDialog,
             icon: const Icon(Icons.warning, size: 16),
             label: const Text('Incompleta', style: TextStyle(fontSize: 12)),
             style: OutlinedButton.styleFrom(foregroundColor: AppColors.statusIncomplete, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
@@ -822,13 +898,31 @@ class _RouteActivityCardState extends State<_RouteActivityCard> {
     }
   }
 
-  void _showPhotoDialog(BuildContext context) {
+  /// Starts the delivery line, fetching GPS coordinates on demand first.
+  Future<void> _startLine() async {
+    await _fetchCurrentLocation();
+    if (!mounted) return;
+    widget.odoo.notifyLineStarted(widget.line.id, _currentLocation.first, _currentLocation.second);
+  }
+
+  /// Marks the line as picked up, fetching GPS coordinates on demand first.
+  Future<void> _pickUpLine() async {
+    await _fetchCurrentLocation();
+    if (!mounted) return;
+    widget.odoo.notifyLinePickedUp(widget.line.id, _currentLocation.first, _currentLocation.second);
+  }
+
+  Future<void> _showPhotoDialog() async {
+    await _fetchCurrentLocation();
+    if (!mounted) return;
     showDialog(context: context, builder: (_) => PhotoCaptureDialog(
       partnerName: widget.line.partnerId.name, odoo: widget.odoo, lineId: widget.line.id, currentLocation: _currentLocation,
     ));
   }
 
-  void _showIncompleteDialog(BuildContext context) {
+  Future<void> _showIncompleteDialog() async {
+    await _fetchCurrentLocation();
+    if (!mounted) return;
     showDialog(context: context, builder: (_) => IncompleteReasonDialog(
       partnerName: widget.line.partnerId.name, odoo: widget.odoo, lineId: widget.line.id, currentLocation: _currentLocation,
     ));
