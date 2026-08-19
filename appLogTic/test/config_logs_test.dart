@@ -30,8 +30,8 @@ void main() {
 
       // Then veo el texto "Configuración Odoo API"
       await BddSteps.veoElTexto(tester, 'Configuración Odoo API');
-      // And veo el texto "🌐 Servidor Odoo"
-      await BddSteps.veoElTexto(tester, '🌐 Servidor Odoo');
+      // And veo el texto "Servidor Odoo"
+      await BddSteps.veoElTexto(tester, 'Servidor Odoo');
       // And veo el campo de base de datos
       await BddSteps.veoElCampo(tester, 'Base de Datos');
     });

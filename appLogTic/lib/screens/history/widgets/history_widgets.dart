@@ -475,13 +475,13 @@ class _HistoryLineCardState extends State<HistoryLineCard> {
 
   String _getStateLabel(String state) {
     switch (state) {
-      case 'done': return '✓ Entregado';
-      case 'picked_up': return '📦 Recogido';
-      case 'in_progress': return '🚛 En camino';
-      case 'incomplete': return '⚠ Incompleta';
-      case 'partial': return '⚠ Parcial';
-      case 'cancelled': return '✗ Cancelado';
-      default: return '⏳ Pendiente';
+      case 'done': return 'Entregado';
+      case 'picked_up': return 'Recogido';
+      case 'in_progress': return 'En camino';
+      case 'incomplete': return 'Incompleta';
+      case 'partial': return 'Parcial';
+      case 'cancelled': return 'Cancelado';
+      default: return 'Pendiente';
     }
   }
 

@@ -102,7 +102,14 @@ class EmptyStateCard extends StatelessWidget {
               const Icon(Icons.local_shipping, size: 64, color: AppColors.gray400),
               const SizedBox(height: 16),
               if (errorMessage.isNotEmpty) ...[
-                const Text('⚠️ Error de sincronización', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: AppColors.error)),
+                const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.error_outline, color: AppColors.error, size: 20),
+                    SizedBox(width: 6),
+                    Text('Error de sincronización', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: AppColors.error)),
+                  ],
+                ),
                 const SizedBox(height: 8),
                 Text(errorMessage, style: const TextStyle(fontSize: 14, color: AppColors.gray600), textAlign: TextAlign.center),
               ] else ...[
@@ -199,7 +206,14 @@ class _ExpandableRouteCardState extends State<ExpandableRouteCard> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(color: AppColors.error.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(6)),
-                        child: const Text('⚠ URGENTE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.error)),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(Icons.warning_amber_rounded, size: 12, color: AppColors.error),
+                            SizedBox(width: 3),
+                            Text('URGENTE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.error)),
+                          ],
+                        ),
                       ),
                     const SizedBox(width: 8),
                     Icon(_isExpanded ? Icons.expand_less : Icons.expand_more, color: Theme.of(context).primaryColor),
@@ -283,41 +297,23 @@ class _RouteActivityCardState extends State<RouteActivityCard> {
   /// is unavailable.
   Future<bool> _fetchCurrentLocation() async {
     try {
-      // 1. Check that location services are enabled
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        _showLocationWarning(
-          'La ubicación del dispositivo está desactivada. '
-          'Actívala para registrar las coordenadas de la entrega.',
-          onOpenSettings: Geolocator.openLocationSettings,
-        );
         return false;
       }
 
-      // 2. Check / request permission
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
       }
 
-      if (permission == LocationPermission.deniedForever) {
-        _showLocationWarning(
-          'El permiso de ubicación fue denegado permanentemente. '
-          'Actívalo desde los ajustes de la app para registrar las coordenadas de la entrega.',
-          onOpenSettings: Geolocator.openAppSettings,
-        );
+      if (permission == LocationPermission.deniedForever || permission == LocationPermission.denied) {
         return false;
       }
 
-      if (permission == LocationPermission.denied) {
-        _showLocationWarning(
-          'Sin permiso de ubicación no se registrarán las coordenadas de la entrega.',
-        );
-        return false;
-      }
-
-      // 3. Get position
-      final position = await Geolocator.getCurrentPosition();
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(timeLimit: Duration(seconds: 4)),
+      );
       if (mounted) {
         setState(() => _currentLocation = Pair(position.latitude, position.longitude));
       }
@@ -327,39 +323,6 @@ class _RouteActivityCardState extends State<RouteActivityCard> {
     }
   }
 
-  /// Warns the user that geolocation is unavailable.
-  /// If [onOpenSettings] is provided, a button to open the relevant
-  /// settings screen (GPS toggle or app settings) is shown.
-  void _showLocationWarning(String message, {VoidCallback? onOpenSettings}) {
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.location_off, color: AppColors.statusIncomplete),
-            SizedBox(width: 8),
-            Expanded(child: Text('Ubicación no disponible')),
-          ],
-        ),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Entendido'),
-          ),
-          if (onOpenSettings != null)
-            FilledButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                onOpenSettings();
-              },
-              child: const Text('Abrir ajustes'),
-            ),
-        ],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -422,10 +385,19 @@ class _RouteActivityCardState extends State<RouteActivityCard> {
                                 if (widget.line.obra != null && widget.line.obra!.isNotEmpty)
                                   Padding(
                                     padding: const EdgeInsets.only(top: 2),
-                                    child: Text(
-                                      '📍 ${widget.line.obra}',
-                                      style: const TextStyle(fontSize: 12, color: AppColors.gray600),
-                                      softWrap: true,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.place_outlined, size: 13, color: AppColors.gray600),
+                                        const SizedBox(width: 3),
+                                        Expanded(
+                                          child: Text(
+                                            widget.line.obra!,
+                                            style: const TextStyle(fontSize: 12, color: AppColors.gray600),
+                                            softWrap: true,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                               ],
@@ -729,13 +701,13 @@ class _RouteActivityCardState extends State<RouteActivityCard> {
 
   String _getStateLabel(String state) {
     switch (state) {
-      case 'done': return '✓ Entregado';
-      case 'picked_up': return '📦 Recogido';
-      case 'in_progress': return '🚛 En camino';
-      case 'incomplete': return '⚠ Incompleta';
-      case 'partial': return '⚠ Parcial';
-      case 'cancelled': return '✗ Cancelado';
-      default: return '⏳ Pendiente';
+      case 'done': return 'Entregado';
+      case 'picked_up': return 'Recogido';
+      case 'in_progress': return 'En camino';
+      case 'incomplete': return 'Incompleta';
+      case 'partial': return 'Parcial';
+      case 'cancelled': return 'Cancelado';
+      default: return 'Pendiente';
     }
   }
 

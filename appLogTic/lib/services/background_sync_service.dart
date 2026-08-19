@@ -12,9 +12,14 @@ class BackgroundSyncService {
   /// Returns `true` while a sync tick is in progress.
   bool _isSyncing = false;
 
-  /// Callback invoked on each tick. Receives the current [driverId].
+  /// Tracks when the last successful sync ran so we can pass `since` to the
+  /// check-new endpoint and avoid treating every pending route as "new".
+  DateTime? _lastSyncedAt;
+
+  /// Callback invoked on each tick. Receives the current [driverId] and the
+  /// [since] timestamp of the last completed sync (null on first run).
   /// Should return the number of synced routes, or 0 on failure.
-  final Future<int> Function(int driverId) onSync;
+  final Future<int> Function(int driverId, String? since) onSync;
 
   /// Callback invoked each tick to check if the user is still logged in.
   /// Return `null` to skip / stop syncing.
@@ -47,6 +52,14 @@ class BackgroundSyncService {
     debugPrint('🔄 BackgroundSyncService stopped');
   }
 
+  /// Stop and restart the timer. Use after the user logs in so the service
+  /// resumes for the newly authenticated session.
+  void reset() {
+    stop();
+    _lastSyncedAt = null;
+    start();
+  }
+
   Future<void> _tick() async {
     if (_isSyncing) return; // don't overlap ticks
 
@@ -60,8 +73,18 @@ class BackgroundSyncService {
 
     _isSyncing = true;
     try {
-      debugPrint('🔄 BackgroundSync: starting tick for driver $driverId');
-      final count = await onSync(driverId);
+      // Pass the last sync timestamp as 'since' so the backend only reports
+      // routes created/assigned AFTER that point. Without this, every tick
+      // returns all pending routes as "new", causing an infinite badge loop.
+      final since = _lastSyncedAt
+          ?.toLocal()
+          .toString()
+          .substring(0, 19); // 'yyyy-MM-dd HH:mm:ss'
+
+      debugPrint(
+          '🔄 BackgroundSync: starting tick for driver $driverId (since: $since)');
+      final count = await onSync(driverId, since);
+      _lastSyncedAt = DateTime.now();
       debugPrint('🔄 BackgroundSync: tick complete — $count routes synced');
     } catch (e) {
       debugPrint('🔄 BackgroundSync: tick error — $e');
@@ -75,3 +98,4 @@ class BackgroundSyncService {
     stop();
   }
 }
+

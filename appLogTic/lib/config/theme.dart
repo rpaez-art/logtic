@@ -57,6 +57,11 @@ class AppColors {
   static const Color warning = Color(0xFFCBA052);
   static const Color info = Color(0xFFA2B2C8);
   static const Color success = Color(0xFF1D3C34);
+
+  // Modo Oscuro Surfaces
+  static const Color surfaceDark = Color(0xFF25282A);
+  static const Color surfaceDarkMedium = Color(0xFF1E2022);
+  static const Color backgroundDark = Color(0xFF141617);
 }
 
 class AppTheme {

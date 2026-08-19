@@ -546,9 +546,9 @@ class _SupplierInfoDialogState extends State<SupplierInfoDialog> {
   }
 
   String _getOrderTypeLabel(String? orderType) {
-    if (orderType == 'purchase') return '🛒 COMPRA / PROVEEDOR';
-    if (orderType == 'sale') return '📦 VENTA / CLIENTE';
-    return '🚚 DESPACHO';
+    if (orderType == 'purchase') return 'COMPRA / PROVEEDOR';
+    if (orderType == 'sale') return 'VENTA / CLIENTE';
+    return 'DESPACHO';
   }
 
   Color _getStateColor(String state) {
@@ -575,13 +575,13 @@ class _SupplierInfoDialogState extends State<SupplierInfoDialog> {
 
   String _getStateLabel(String state) {
     switch (state) {
-      case 'done': return '✓ Entregado';
-      case 'picked_up': return '📦 Recogido';
-      case 'in_progress': return '🚛 En camino';
-      case 'incomplete': return '⚠ Incompleta';
-      case 'partial': return '⚠ Parcial';
-      case 'cancelled': return '✗ Cancelado';
-      default: return '⏳ Pendiente';
+      case 'done': return 'Entregado';
+      case 'picked_up': return 'Recogido';
+      case 'in_progress': return 'En camino';
+      case 'incomplete': return 'Incompleta';
+      case 'partial': return 'Parcial';
+      case 'cancelled': return 'Cancelado';
+      default: return 'Pendiente';
     }
   }
 

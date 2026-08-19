@@ -8,6 +8,7 @@ import '../providers/notification_badge_provider.dart';
 import '../widgets/animated_layout_switcher.dart';
 import 'shell/widgets/badge_wrapper.dart';
 import 'shell/widgets/drawer_navigation_widgets.dart';
+import '../widgets/connection_status_dialog.dart';
 
 /// Responsive shell that shows BottomNav on phones (narrow)
 /// and a permanent Drawer on tablets (wide).
@@ -307,6 +308,16 @@ class _ShellScreenState extends State<ShellScreen> {
                       letterSpacing: 1.5,
                     ),
                   ),
+                ),
+                DrawerItem(
+                  icon: Icons.sensors_outlined,
+                  activeIcon: Icons.sensors,
+                  label: 'Verificar Conexiones',
+                  selected: false,
+                  onTap: () {
+                    Navigator.pop(context);
+                    ConnectionStatusDialog.show(context);
+                  },
                 ),
                 DrawerItem(
                   icon: Icons.bug_report_outlined,

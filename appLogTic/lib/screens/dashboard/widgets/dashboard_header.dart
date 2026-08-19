@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../../../config/theme.dart';
 import '../../../widgets/theme_toggle_button.dart';
+import '../../../widgets/settings_dropdown_menu.dart';
 
 /// Header del dashboard con gradiente, perfil y acciones
 class DashboardHeader extends StatelessWidget {
@@ -93,14 +94,10 @@ class DashboardHeader extends StatelessWidget {
                             ),
                           ),
                         ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        onPressed: onLogout,
-                        icon: const Icon(Icons.logout, color: AppColors.white),
-                        style: IconButton.styleFrom(
-                          backgroundColor: AppColors.white.withValues(alpha: 0.15),
-                          padding: const EdgeInsets.all(10),
-                        ),
+                      const SizedBox(width: 6),
+                      SettingsDropdownMenu(
+                        isAdmin: isAdmin,
+                        onLogout: onLogout,
                       ),
                     ],
                   ),

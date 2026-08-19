@@ -46,7 +46,7 @@ class OdooProvider extends ChangeNotifier {
   List<RouteData> get odooRoutes => _odooRoutes;
 
   /// Whether the current data was loaded from the local cache (offline mode).
-  bool get isShowingCachedData => !_isConnected && _lastSyncTime == '📦 Offline' && _odooRoutes.isNotEmpty;
+  bool get isShowingCachedData => !_isConnected && _lastSyncTime == 'Offline' && _odooRoutes.isNotEmpty;
   bool get isUploadingImage => _isUploadingImage;
   String get uploadImageError => _uploadImageError;
   bool get uploadImageSuccess => _uploadImageSuccess;
@@ -142,12 +142,12 @@ class OdooProvider extends ChangeNotifier {
       final routes = _buildRouteModels(sortedRouteDataList);
       _lastSyncTime = DateTime.now().toString().substring(11, 19);
       _isLoading = false;
-      _debugInfo = '✅ ${routes.length} rutas cargadas';
+      _debugInfo = '${routes.length} rutas cargadas';
       notifyListeners();
 
       return routes;
     } catch (e) {
-      debugPrint('❌ Sync failed, trying cache: $e');
+      debugPrint('Sync failed, trying cache: $e');
       _isConnected = false;
 
       // Attempt to load from local cache
@@ -156,10 +156,10 @@ class OdooProvider extends ChangeNotifier {
         _odooRoutes = cachedRoutes;
         final routes = _buildRouteModels(cachedRoutes);
 
-        _lastSyncTime = '📦 Offline';
+        _lastSyncTime = 'Offline';
         _isLoading = false;
         _errorMessage = '';
-        _debugInfo = '📦 ${routes.length} rutas desde caché offline';
+        _debugInfo = '${routes.length} rutas desde caché offline';
         notifyListeners();
 
         routes.sort((a, b) => a.sequence.compareTo(b.sequence));

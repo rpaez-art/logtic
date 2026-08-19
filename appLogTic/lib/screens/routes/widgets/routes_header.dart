@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../../config/theme.dart';
 import '../../../widgets/theme_toggle_button.dart';
+import '../../../widgets/settings_dropdown_menu.dart';
 
 /// Encabezado de la pantalla de rutas
 class RoutesHeader extends StatelessWidget {
   final String userName;
   final bool isAdmin;
-  final bool isConnected;
-  final String lastSync;
   final String errorMessage;
   final bool isLoading;
   final VoidCallback onSync;
@@ -19,8 +18,6 @@ class RoutesHeader extends StatelessWidget {
     super.key,
     required this.userName,
     required this.isAdmin,
-    required this.isConnected,
-    required this.lastSync,
     required this.errorMessage,
     required this.isLoading,
     required this.onSync,
@@ -77,51 +74,42 @@ class RoutesHeader extends StatelessWidget {
                   padding: EdgeInsets.only(right: 2),
                   child: AnimatedThemeToggle(),
                 ),
-                IconButton(onPressed: onLogout, icon: const Icon(Icons.exit_to_app, color: AppColors.white)),
+                SettingsDropdownMenu(
+                  isAdmin: isAdmin,
+                  onLogout: onLogout,
+                ),
               ],
             ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                ConnectionBadge(isConnected: isConnected, lastSync: lastSync),
-                if (errorMessage.isNotEmpty)
+            if (errorMessage.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(color: AppColors.error.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(12)),
-                    child: const Text('⚠️ Error', style: TextStyle(fontSize: 10, color: AppColors.white)),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.warning_amber_rounded, size: 14, color: AppColors.white),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            errorMessage,
+                            style: const TextStyle(fontSize: 11, color: AppColors.white),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-              ],
-            ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
     );
   }
-}
-
-class ConnectionBadge extends StatelessWidget {
-  final bool isConnected;
-  final String lastSync;
-  const ConnectionBadge({super.key, required this.isConnected, required this.lastSync});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: isConnected ? AppColors.statusCompleted.withValues(alpha: 0.3) : AppColors.error.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Container(width: 8, height: 8, decoration: BoxDecoration(shape: BoxShape.circle, color: isConnected ? AppColors.statusCompletedLight : AppColors.error)),
-          const SizedBox(width: 6),
-          Text(
-            isConnected ? (lastSync.isNotEmpty ? 'Sync: $lastSync' : 'Conectado') : 'Desconectado',
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.white),
-          ),
-        ],
-      ),
-    );
-  }
-}
+}

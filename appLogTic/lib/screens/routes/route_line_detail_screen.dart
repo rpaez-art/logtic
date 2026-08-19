@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../config/theme.dart';
 import '../../models/odoo_models.dart';
+import '../../utils/pair.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/odoo_provider.dart';
 import '../../widgets/attachment_tile.dart';
 import '../../widgets/theme_toggle_button.dart';
 import './widgets/supplier_info_dialog.dart';
+import './widgets/photo_capture_dialog.dart';
+import './widgets/incomplete_reason_dialog.dart';
 
 class RouteLineDetailScreen extends StatefulWidget {
   final int lineId;
@@ -69,6 +73,37 @@ class _RouteLineDetailScreenState extends State<RouteLineDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final odoo = context.watch<OdooProvider>();
+    RouteLineData? currentLine;
+
+    // Search in today's synced routes first
+    for (final route in odoo.odooRoutes) {
+      for (final line in route.routeLines) {
+        if (line.id == widget.lineId) {
+          currentLine = line;
+          break;
+        }
+      }
+      if (currentLine != null) break;
+    }
+
+    // Then search in historical routes lines
+    if (currentLine == null) {
+      for (final historyItem in odoo.routesHistory) {
+        if (historyItem.lines != null) {
+          for (final line in historyItem.lines!) {
+            if (line.id == widget.lineId) {
+              currentLine = line;
+              break;
+            }
+          }
+        }
+        if (currentLine != null) break;
+      }
+    }
+
+    final displayLine = currentLine ?? _lineData;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -88,13 +123,14 @@ class _RouteLineDetailScreenState extends State<RouteLineDetailScreen> {
           ),
         ],
       ),
-      body: _isLoading
+      body: _isLoading && displayLine == null
           ? const Center(child: CircularProgressIndicator())
-          : _lineData == null
+          : displayLine == null
               ? _buildNotFound()
-              : _buildDetail(),
+              : _buildDetailWithLine(displayLine),
     );
   }
+
 
   Widget _buildNotFound() {
     return Center(
@@ -132,8 +168,7 @@ class _RouteLineDetailScreenState extends State<RouteLineDetailScreen> {
     );
   }
 
-  Widget _buildDetail() {
-    final line = _lineData!;
+  Widget _buildDetailWithLine(RouteLineData line) {
     final stateColor = _getStateColor(line.state);
 
     return SingleChildScrollView(
@@ -349,22 +384,214 @@ class _RouteLineDetailScreenState extends State<RouteLineDetailScreen> {
           if (line.startTime != null || line.pickupTime != null || line.endTime != null)
             const SizedBox(height: 12),
 
-          // Navigate button
+          // Actions
+          _buildActionSection(context, line),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionSection(BuildContext context, RouteLineData line) {
+    final odoo = context.read<OdooProvider>();
+
+    return Column(
+      children: [
+        // Navigate button
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton.icon(
+            onPressed: () => _navigate(context, line),
+            icon: const Icon(Icons.navigation, size: 20),
+            label: const Text('Abrir en Google Maps', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.accent,
+              foregroundColor: AppColors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // State Action Buttons
+        if (line.state == 'pending') ...[
           SizedBox(
             width: double.infinity,
-            height: 52,
+            height: 48,
             child: ElevatedButton.icon(
-              onPressed: () => _navigate(context, line),
-              icon: const Icon(Icons.navigation),
-              label: const Text('Abrir en Google Maps', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+              onPressed: () => _startLine(odoo, line),
+              icon: const Icon(Icons.play_arrow_rounded, size: 22),
+              label: const Text('Iniciar Entrega', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.accent,
+                backgroundColor: AppColors.statusInProgress,
                 foregroundColor: AppColors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
             ),
           ),
+        ] else if (line.state == 'in_progress') ...[
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _pickUpLine(odoo, line),
+                  icon: const Icon(Icons.local_shipping_rounded, size: 18),
+                  label: const Text('Recoger', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.statusPickedUp,
+                    foregroundColor: AppColors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _showPhotoDialog(odoo, line),
+                  icon: const Icon(Icons.camera_alt_rounded, size: 18),
+                  label: const Text('Finalizar', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.statusCompleted,
+                    foregroundColor: AppColors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _showIncompleteDialog(odoo, line),
+              icon: const Icon(Icons.warning_amber_rounded, size: 18),
+              label: const Text('Marcar Incompleta / Parcial'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.statusIncomplete,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+        ] else if (line.state == 'picked_up') ...[
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: ElevatedButton.icon(
+                  onPressed: () => _showPhotoDialog(odoo, line),
+                  icon: const Icon(Icons.camera_alt_rounded, size: 18),
+                  label: const Text('Finalizar Entrega', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.statusCompleted,
+                    foregroundColor: AppColors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 2,
+                child: OutlinedButton.icon(
+                  onPressed: () => _showIncompleteDialog(odoo, line),
+                  icon: const Icon(Icons.warning_amber_rounded, size: 18),
+                  label: const Text('Incompleta', style: TextStyle(fontSize: 12)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.statusIncomplete,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ] else if (line.state == 'done') ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            decoration: BoxDecoration(
+              color: AppColors.statusCompleted.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.statusCompleted.withValues(alpha: 0.3)),
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.check_circle_rounded, color: AppColors.statusCompleted, size: 20),
+                SizedBox(width: 8),
+                Text(
+                  'Entrega completada',
+                  style: TextStyle(
+                    color: AppColors.statusCompleted,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
+      ],
+    );
+  }
+
+  Future<Pair<double?, double?>> _getLocation() async {
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return Pair(null, null);
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.deniedForever || permission == LocationPermission.denied) {
+        return Pair(null, null);
+      }
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(timeLimit: Duration(seconds: 4)),
+      );
+      return Pair(position.latitude, position.longitude);
+    } catch (_) {
+      return Pair(null, null);
+    }
+  }
+
+  Future<void> _startLine(OdooProvider odoo, RouteLineData line) async {
+    final loc = await _getLocation();
+    odoo.notifyLineStarted(line.id, loc.first, loc.second);
+  }
+
+  Future<void> _pickUpLine(OdooProvider odoo, RouteLineData line) async {
+    final loc = await _getLocation();
+    odoo.notifyLinePickedUp(line.id, loc.first, loc.second);
+  }
+
+  Future<void> _showPhotoDialog(OdooProvider odoo, RouteLineData line) async {
+    final loc = await _getLocation();
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (_) => PhotoCaptureDialog(
+        partnerName: line.partnerId.name,
+        odoo: odoo,
+        lineId: line.id,
+        currentLocation: loc,
+      ),
+    );
+  }
+
+  Future<void> _showIncompleteDialog(OdooProvider odoo, RouteLineData line) async {
+    final loc = await _getLocation();
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (_) => IncompleteReasonDialog(
+        partnerName: line.partnerId.name,
+        odoo: odoo,
+        lineId: line.id,
+        currentLocation: loc,
       ),
     );
   }
@@ -378,6 +605,7 @@ class _RouteLineDetailScreenState extends State<RouteLineDetailScreen> {
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     }
   }
+
 
   Color _getStateColor(String state) {
     switch (state) {
@@ -403,13 +631,13 @@ class _RouteLineDetailScreenState extends State<RouteLineDetailScreen> {
 
   String _getStateLabel(String state) {
     switch (state) {
-      case 'done': return '✓ Entregado';
-      case 'picked_up': return '📦 Recogido';
-      case 'in_progress': return '🚛 En camino';
-      case 'incomplete': return '⚠ Incompleta';
-      case 'partial': return '⚠ Parcial';
-      case 'cancelled': return '✗ Cancelado';
-      default: return '⏳ Pendiente';
+      case 'done': return 'Entregado';
+      case 'picked_up': return 'Recogido';
+      case 'in_progress': return 'En camino';
+      case 'incomplete': return 'Incompleta';
+      case 'partial': return 'Parcial';
+      case 'cancelled': return 'Cancelado';
+      default: return 'Pendiente';
     }
   }
 

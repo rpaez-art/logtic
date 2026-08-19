@@ -124,6 +124,33 @@ class _LogticAppState extends State<LogticApp> {
   late final GoRouter _router;
   BackgroundSyncService? _bgSync;
 
+  /// Listens to [AuthProvider] state changes so we can react when the user
+  /// logs in or out (i.e. restart the background sync and consume any
+  /// deep-link that was stored before authentication completed).
+  void _onAuthChange() {
+    if (!mounted) return;
+    final auth = widget.authProvider;
+
+    if (auth.isLoggedIn) {
+      // Error 2.3: re-start the background sync service after login.
+      // Without this it stays dead if the user was at the login screen
+      // when the first timer tick fired and stopped the service.
+      _bgSync?.reset();
+
+      // Error 2.4: consume any deep-link that arrived before login.
+      final pending = auth.consumePendingDeepLink();
+      if (pending != null) {
+        // Defer navigation until the router has settled.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _router.go(pending);
+        });
+      }
+    } else {
+      // User logged out — stop the service until the next login.
+      _bgSync?.stop();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -138,11 +165,16 @@ class _LogticAppState extends State<LogticApp> {
       _handleDeepLink(data);
     };
 
+    // Error 2.3 + Error 2.4: react to auth state changes (login/logout).
+    widget.authProvider.addListener(_onAuthChange);
+
     // Start background sync after the widget tree is built.
     // Storage permission request was removed: logs now use the app-private
     // documents directory, which requires no permissions on Android 10+.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initBackgroundSync();
+      // Error 2.1: load the persisted unread badge count.
+      context.read<NotificationBadgeProvider>().load();
     });
   }
 
@@ -151,13 +183,16 @@ class _LogticAppState extends State<LogticApp> {
     _bgSync?.stop();
     _bgSync = BackgroundSyncService(
       getDriverId: () => context.read<AuthProvider>().currentUser?.driverId,
-      onSync: (driverId) async {
+      // Error 2.2: onSync now receives `since` (last sync timestamp) to pass
+      // to the check-new endpoint, preventing every pending route from being
+      // reported as "new" on each tick.
+      onSync: (driverId, since) async {
         final odoo = context.read<OdooProvider>();
         final routeProvider = context.read<RouteProvider>();
         final badgeProvider = context.read<NotificationBadgeProvider>();
 
         // 1. Verificar si hay rutas nuevas (endpoint ligero)
-        final hasNew = await odoo.checkNewRoutes(driverId);
+        final hasNew = await odoo.checkNewRoutes(driverId, since: since);
         if (hasNew) {
           // 2. Solo sincronizar si hay rutas nuevas
           final routes = await odoo.syncRoutesFromOdoo(driverId, silent: true);
@@ -171,11 +206,17 @@ class _LogticAppState extends State<LogticApp> {
         return 0;
       },
     );
-    _bgSync!.start();
+    // Only start immediately if the user is already logged in.
+    // If they are at the login screen the service will be started by
+    // _onAuthChange when authentication completes (Error 2.3).
+    if (widget.authProvider.isLoggedIn) {
+      _bgSync!.start();
+    }
   }
 
   @override
   void dispose() {
+    widget.authProvider.removeListener(_onAuthChange);
     _bgSync?.dispose();
     super.dispose();
   }
@@ -210,7 +251,7 @@ class _LogticAppState extends State<LogticApp> {
     if (message.data.containsKey('route_count')) {
       body = 'Te han asignado ${message.data['route_count']} nueva(s) ruta(s).';
     }
-    final route = message.data['route'] as String?;
+
 
     // 1. Show local system notification (visible in notification shade)
     final notificationId = LocalNotificationService.generateId(message.messageId ?? DateTime.now().millisecondsSinceEpoch.toString());
@@ -229,15 +270,19 @@ class _LogticAppState extends State<LogticApp> {
     }
 
     // 3. Show in-app banner (visible while using the app)
+    // Bug 1.3: build the onTap callback when there are route_ids OR route,
+    // not only when the legacy 'route' key is present (Odoo sends route_ids).
     final ctx = AppRouter.rootNavigatorKey.currentContext;
     if (ctx == null) return;
 
+    final bool hasDeepLink = message.data.containsKey('route') ||
+        message.data.containsKey('route_ids');
     NotificationBanner.show(
       ctx,
       title: title,
       body: body,
-      route: route,
-      onTap: route != null
+      route: message.data['route'] as String?,
+      onTap: hasDeepLink
           ? () {
               badgeCtx?.read<NotificationBadgeProvider>().markOneAsRead();
               _handleDeepLink(message.data);
@@ -257,23 +302,29 @@ class _LogticAppState extends State<LogticApp> {
   }
 
   void _handleDeepLink(Map<String, dynamic> data) {
-    // El backend Odoo envía 'route_ids' (IDs separados por coma), no 'route'.
-    // Construimos el deep link desde route_ids si no viene 'route'.
+    if (!mounted) return;
+
+    // Bug 1.1: Odoo sends route_ids (IDs of mss.route records, not
+    // mss.route.line). The old code built '/routes/{id}' which maps to
+    // RouteLineDetailScreen and expects a *line* ID — causing "Entrega no
+    // encontrada". The correct fix is to navigate to the routes list
+    // (/routes) so the user sees all their assigned routes for today.
+    //
+    // If a specific 'route' path was already resolved (e.g. from a
+    // custom server-side deep link), use it verbatim; otherwise go to /routes.
     String? route = data['route'] as String?;
-    if (route == null && data.containsKey('route_ids')) {
-      final routeIds = data['route_ids'] as String?;
-      if (routeIds != null && routeIds.isNotEmpty) {
-        final firstId = routeIds.split(',').first.trim();
-        if (firstId.isNotEmpty) {
-          route = '/routes/$firstId';
-        }
+    if (route == null) {
+      if (data.containsKey('route_ids') || data.containsKey('type')) {
+        // There is route data, but no explicit path — land on the routes tab.
+        route = '/routes';
       }
     }
-    if (route == null || !mounted) return;
+    if (route == null) return;
 
     // Ensure user is logged in before navigating
     if (!widget.authProvider.isLoggedIn) {
-      // Store the deep link for after login
+      // Store the deep link for after login; it will be consumed in
+      // _onAuthChange when authentication succeeds (Error 2.4).
       widget.authProvider.setPendingDeepLink(route);
       return;
     }

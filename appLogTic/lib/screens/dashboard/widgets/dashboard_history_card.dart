@@ -369,10 +369,19 @@ class _DashboardLineCardState extends State<DashboardLineCard> {
                                   if (line.obra != null && line.obra!.isNotEmpty)
                                     Padding(
                                       padding: const EdgeInsets.only(top: 2),
-                                      child: Text(
-                                        '📍 ${line.obra}',
-                                        style: const TextStyle(fontSize: 11, color: AppColors.gray600),
-                                        softWrap: true,
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.place_outlined, size: 12, color: AppColors.gray600),
+                                          const SizedBox(width: 3),
+                                          Expanded(
+                                            child: Text(
+                                              line.obra!,
+                                              style: const TextStyle(fontSize: 11, color: AppColors.gray600),
+                                              softWrap: true,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                 ],
@@ -593,13 +602,13 @@ class _DashboardLineCardState extends State<DashboardLineCard> {
 
   String _getStateLabel(String state) {
     switch (state) {
-      case 'done': return '✓ Entregado';
-      case 'picked_up': return '📦 Recogido';
-      case 'in_progress': return '🚛 En camino';
-      case 'incomplete': return '⚠ Incompleta';
-      case 'partial': return '⚠ Parcial';
-      case 'cancelled': return '✗ Cancelado';
-      default: return '⏳ Pendiente';
+      case 'done': return 'Entregado';
+      case 'picked_up': return 'Recogido';
+      case 'in_progress': return 'En camino';
+      case 'incomplete': return 'Incompleta';
+      case 'partial': return 'Parcial';
+      case 'cancelled': return 'Cancelado';
+      default: return 'Pendiente';
     }
   }
 

@@ -57,9 +57,15 @@ class _OdooConfigScreenState extends State<OdooConfigScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      '🌐 Servidor Odoo',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                    Row(
+                      children: const [
+                        Icon(Icons.dns_rounded, size: 16, color: AppColors.primary),
+                        SizedBox(width: 6),
+                        Text(
+                          'Servidor Odoo',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     Text(

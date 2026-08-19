@@ -7,6 +7,9 @@ import '../../providers/auth_provider.dart';
 import '../../providers/odoo_provider.dart';
 import '../../widgets/theme_toggle_button.dart';
 import '../../widgets/attachment_tile.dart';
+import '../../widgets/dynamic_search_bar.dart';
+import '../../widgets/pagination_bar.dart';
+import '../../utils/search_utils.dart';
 import '../routes/widgets/supplier_info_dialog.dart';
 import '../../services/api/retrofit_client.dart';
 
@@ -18,6 +21,15 @@ class RouteHistoryScreen extends StatefulWidget {
 }
 
 class _RouteHistoryScreenState extends State<RouteHistoryScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  String _searchQuery = '';
+  String _selectedFilter = 'all'; // 'all', 'today', 'week', 'month', 'completed_100', 'has_docs', 'custom_range'
+  DateTimeRange? _dateRange;
+  String _sortBy = 'date_desc'; // 'date_desc', 'date_asc', 'duration_desc', 'deliveries_desc'
+  int _currentPage = 1;
+  int _pageSize = 10;
+
   @override
   void initState() {
     super.initState();
@@ -25,25 +37,238 @@ class _RouteHistoryScreenState extends State<RouteHistoryScreen> {
       final auth = context.read<AuthProvider>();
       final odoo = context.read<OdooProvider>();
       if (auth.currentUser != null) {
-        odoo.fetchRoutesHistory(auth.currentUser!.driverId, limit: 50);
+        odoo.fetchRoutesHistory(auth.currentUser!.driverId, limit: 100);
         odoo.fetchHistoryStats(auth.currentUser!.driverId);
       }
     });
   }
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    setState(() {
+      _searchQuery = value;
+      _currentPage = 1;
+    });
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    setState(() {
+      _searchQuery = '';
+      _currentPage = 1;
+    });
+  }
+
+  void _selectFilter(String filter) {
+    setState(() {
+      _selectedFilter = filter;
+      _currentPage = 1;
+    });
+  }
+
+  Future<void> _pickDateRange() async {
+    final now = DateTime.now();
+    final initialRange = _dateRange ??
+        DateTimeRange(
+          start: now.subtract(const Duration(days: 7)),
+          end: now,
+        );
+
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(now.year + 1),
+      initialDateRange: initialRange,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+                  primary: AppColors.corpGreen,
+                ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _dateRange = picked;
+        _selectedFilter = 'custom_range';
+        _currentPage = 1;
+      });
+    }
+  }
+
+  void _resetAllFilters() {
+    _searchController.clear();
+    setState(() {
+      _searchQuery = '';
+      _selectedFilter = 'all';
+      _dateRange = null;
+      _sortBy = 'date_desc';
+      _currentPage = 1;
+    });
+  }
+
+  String _formatDateSpanish(String dateStr) {
+    try {
+      final dt = DateTime.parse(dateStr);
+      const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+      const days = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
+      final dayName = days[dt.weekday - 1];
+      final monthName = months[dt.month - 1];
+      return '$dayName, ${dt.day} de $monthName ${dt.year}';
+    } catch (_) {
+      return dateStr;
+    }
+  }
+
+  List<RouteHistoryItem> _filterAndSortRoutes(List<RouteHistoryItem> allRoutes) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final weekStart = today.subtract(Duration(days: today.weekday - 1));
+    final monthStart = DateTime(now.year, now.month, 1);
+
+    final filtered = allRoutes.where((route) {
+      // 1. Text search query (case & accent insensitive multi-term search)
+      if (_searchQuery.trim().isNotEmpty) {
+        final List<String?> routeFields = [
+          route.name,
+          route.date,
+          _formatDateSpanish(route.date),
+        ];
+
+        if (route.lines != null) {
+          for (final line in route.lines!) {
+            routeFields.addAll([
+              line.partnerId.name,
+              line.street,
+              line.originAddress,
+              line.destinationAddress,
+              line.obra,
+              line.orderName,
+              line.notes,
+            ]);
+          }
+        }
+
+        if (!SearchUtils.matchesAny(routeFields, _searchQuery)) {
+          return false;
+        }
+      }
+
+      // 2. Filter category
+      DateTime? routeDate;
+      try {
+        routeDate = DateTime.parse(route.date);
+      } catch (_) {}
+
+      switch (_selectedFilter) {
+        case 'today':
+          if (routeDate == null) return false;
+          final rDate = DateTime(routeDate.year, routeDate.month, routeDate.day);
+          if (rDate != today) return false;
+          break;
+        case 'week':
+          if (routeDate == null) return false;
+          final rDate = DateTime(routeDate.year, routeDate.month, routeDate.day);
+          if (rDate.isBefore(weekStart)) return false;
+          break;
+        case 'month':
+          if (routeDate == null) return false;
+          final rDate = DateTime(routeDate.year, routeDate.month, routeDate.day);
+          if (rDate.isBefore(monthStart)) return false;
+          break;
+        case 'completed_100':
+          if (route.totalDeliveries == 0 || route.completedDeliveries < route.totalDeliveries) {
+            return false;
+          }
+          break;
+        case 'has_docs':
+          final hasDocs = route.lines != null &&
+              route.lines!.any((l) => l.attachments != null && l.attachments!.isNotEmpty);
+          if (!hasDocs) return false;
+          break;
+        case 'custom_range':
+          if (_dateRange != null && routeDate != null) {
+            final rDate = DateTime(routeDate.year, routeDate.month, routeDate.day);
+            final start = DateTime(_dateRange!.start.year, _dateRange!.start.month, _dateRange!.start.day);
+            final end = DateTime(_dateRange!.end.year, _dateRange!.end.month, _dateRange!.end.day);
+            if (rDate.isBefore(start) || rDate.isAfter(end)) return false;
+          }
+          break;
+        default:
+          break;
+      }
+
+      return true;
+    }).toList();
+
+    // Sorting
+    filtered.sort((a, b) {
+      switch (_sortBy) {
+        case 'date_asc':
+          return a.date.compareTo(b.date);
+        case 'duration_desc':
+          return b.durationMinutes.compareTo(a.durationMinutes);
+        case 'deliveries_desc':
+          return b.totalDeliveries.compareTo(a.totalDeliveries);
+        case 'date_desc':
+        default:
+          return b.date.compareTo(a.date);
+      }
+    });
+
+    return filtered;
+  }
+
+  void _goToPage(int page, int totalPages) {
+    if (page < 1 || page > totalPages) return;
+    setState(() => _currentPage = page);
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        220, // scroll past header stats
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final auth = context.watch<AuthProvider>();
     final odoo = context.watch<OdooProvider>();
 
-    final routes = odoo.routesHistory;
+    final allRoutes = odoo.routesHistory;
     final stats = odoo.historyStats?.summary;
     final performance = odoo.historyStats?.performance;
-    
-    final totalRoutes = stats?.totalRoutes ?? 0;
+
+    final totalRoutes = stats?.totalRoutes ?? allRoutes.length;
     final totalDeliveries = stats?.totalDeliveries ?? 0;
     final totalCompleted = stats?.completedDeliveries ?? 0;
     final avgDuration = performance?.avgRouteTimeFormatted ?? '--';
+
+    final filteredRoutes = _filterAndSortRoutes(allRoutes);
+    final totalPages = (filteredRoutes.isEmpty || _pageSize <= 0)
+        ? 1
+        : (filteredRoutes.length / _pageSize).ceil();
+
+    // Ensure valid page
+    if (_currentPage > totalPages && totalPages > 0) {
+      _currentPage = totalPages;
+    }
+
+    final startIndex = (_currentPage - 1) * _pageSize;
+    final paginatedRoutes = filteredRoutes.skip(startIndex).take(_pageSize).toList();
+    final isFiltering = _searchQuery.isNotEmpty || _selectedFilter != 'all' || _sortBy != 'date_desc';
 
     return Scaffold(
       appBar: AppBar(
@@ -54,7 +279,7 @@ class _RouteHistoryScreenState extends State<RouteHistoryScreen> {
           IconButton(
             onPressed: () {
               if (auth.currentUser != null) {
-                odoo.fetchRoutesHistory(auth.currentUser!.driverId, limit: 50);
+                odoo.fetchRoutesHistory(auth.currentUser!.driverId, limit: 100);
                 odoo.fetchHistoryStats(auth.currentUser!.driverId);
               }
             },
@@ -68,15 +293,13 @@ class _RouteHistoryScreenState extends State<RouteHistoryScreen> {
         ],
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [AppColors.gray100, AppColors.white],
-          ),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.backgroundDark : AppColors.gray100,
         ),
         child: CustomScrollView(
+          controller: _scrollController,
           slivers: [
+            // Stats summary card
             SliverToBoxAdapter(
               child: _HistorySummarySection(
                 totalRoutes: totalRoutes,
@@ -85,6 +308,189 @@ class _RouteHistoryScreenState extends State<RouteHistoryScreen> {
                 avgDuration: avgDuration,
               ),
             ),
+
+            // Search & Filter controls
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Smart search bar
+                    DynamicSearchBar(
+                      controller: _searchController,
+                      hintText: 'Buscar por ruta, cliente, dirección o fecha...',
+                      onChanged: _onSearchChanged,
+                      onClear: _clearSearch,
+                      accentColor: AppColors.corpGreen,
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Quick filter chips horizontal list
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _buildFilterChip('all', 'Todas', Icons.all_inclusive),
+                          const SizedBox(width: 8),
+                          _buildFilterChip('today', 'Hoy', Icons.today),
+                          const SizedBox(width: 8),
+                          _buildFilterChip('week', 'Esta semana', Icons.calendar_view_week),
+                          const SizedBox(width: 8),
+                          _buildFilterChip('month', 'Este mes', Icons.calendar_month),
+                          const SizedBox(width: 8),
+                          _buildFilterChip('completed_100', '100% Completas', Icons.check_circle_outline),
+                          const SizedBox(width: 8),
+                          _buildFilterChip('has_docs', 'Con Documentos', Icons.attach_file),
+                          const SizedBox(width: 8),
+                          InkWell(
+                            onTap: _pickDateRange,
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: _selectedFilter == 'custom_range'
+                                    ? AppColors.primary
+                                    : (isDark ? AppColors.surfaceDark : AppColors.white),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: _selectedFilter == 'custom_range'
+                                      ? AppColors.primary
+                                      : (isDark ? AppColors.gray700 : AppColors.gray300),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.date_range,
+                                    size: 14,
+                                    color: _selectedFilter == 'custom_range'
+                                        ? AppColors.white
+                                        : (isDark ? AppColors.gray300 : AppColors.gray700),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    _dateRange != null
+                                        ? '${_dateRange!.start.day}/${_dateRange!.start.month} - ${_dateRange!.end.day}/${_dateRange!.end.month}'
+                                        : 'Rango fecha',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: _selectedFilter == 'custom_range'
+                                          ? AppColors.white
+                                          : (isDark ? AppColors.gray300 : AppColors.gray700),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Results count and sorting bar
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              '${filteredRoutes.length} rutas encontradas',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? AppColors.gray300 : AppColors.gray700,
+                              ),
+                            ),
+                            if (isFiltering) ...[
+                              const SizedBox(width: 8),
+                              GestureDetector(
+                                onTap: _resetAllFilters,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.error.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Text(
+                                    'Limpiar filtros',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: AppColors.error,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        // Sort dropdown
+                        PopupMenuButton<String>(
+                          initialValue: _sortBy,
+                          tooltip: 'Ordenar por',
+                          onSelected: (val) => setState(() {
+                            _sortBy = val;
+                            _currentPage = 1;
+                          }),
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(
+                              value: 'date_desc',
+                              child: Text('Fecha: Más recientes primero'),
+                            ),
+                            const PopupMenuItem(
+                              value: 'date_asc',
+                              child: Text('Fecha: Más antiguas primero'),
+                            ),
+                            const PopupMenuItem(
+                              value: 'duration_desc',
+                              child: Text('Duración: Mayor a menor'),
+                            ),
+                            const PopupMenuItem(
+                              value: 'deliveries_desc',
+                              child: Text('Entregas: Mayor a menor'),
+                            ),
+                          ],
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isDark ? AppColors.surfaceDark : AppColors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: isDark ? AppColors.gray700 : AppColors.gray300,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.sort_rounded, size: 16, color: AppColors.primary),
+                                const SizedBox(width: 4),
+                                Text(
+                                  _sortBy == 'date_desc'
+                                      ? 'Recientes'
+                                      : _sortBy == 'date_asc'
+                                          ? 'Antiguas'
+                                          : _sortBy == 'duration_desc'
+                                              ? 'Duración'
+                                              : 'Entregas',
+                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                                ),
+                                const Icon(Icons.arrow_drop_down, size: 16),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              ),
+            ),
+
             if (odoo.isLoadingHistory)
               const SliverToBoxAdapter(
                 child: Padding(
@@ -92,34 +498,143 @@ class _RouteHistoryScreenState extends State<RouteHistoryScreen> {
                   child: Center(child: CircularProgressIndicator()),
                 ),
               )
-            else if (routes.isEmpty)
-              const SliverToBoxAdapter(
-                child: _EmptyHistorySection(),
-              )
-            else ...[
-              const SliverToBoxAdapter(
+            else if (filteredRoutes.isEmpty)
+              SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  child: Text(
-                    'Rutas Completadas',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  padding: const EdgeInsets.all(32),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Icon(
+                          isFiltering ? Icons.search_off_rounded : Icons.history,
+                          size: 64,
+                          color: AppColors.gray400,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          isFiltering
+                              ? 'No se encontraron rutas con los filtros aplicados'
+                              : 'No hay rutas completadas en el historial',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? AppColors.gray300 : AppColors.gray600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        if (isFiltering) ...[
+                          const SizedBox(height: 12),
+                          ElevatedButton.icon(
+                            onPressed: _resetAllFilters,
+                            icon: const Icon(Icons.refresh, size: 16),
+                            label: const Text('Restablecer búsqueda'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: AppColors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
+              )
+            else ...[
+              // Paginated Route List
               SliverList(
                 delegate: SliverChildBuilderDelegate(
-                  (context, index) => _HistoryRouteCard(item: routes[index]),
-                  childCount: routes.length,
+                  (context, index) => _HistoryRouteCard(item: paginatedRoutes[index]),
+                  childCount: paginatedRoutes.length,
+                ),
+              ),
+
+              // Pagination Controls Bar
+              SliverToBoxAdapter(
+                child: PaginationBar(
+                  currentPage: _currentPage,
+                  totalPages: totalPages,
+                  totalItems: filteredRoutes.length,
+                  pageSize: _pageSize,
+                  pageSizeOptions: const [5, 10, 20, 50],
+                  onPageChanged: (p) => _goToPage(p, totalPages),
+                  onPageSizeChanged: (s) {
+                    setState(() {
+                      _pageSize = s;
+                      _currentPage = 1;
+                    });
+                  },
+                  activeColor: AppColors.corpGreen,
+                  itemLabel: 'rutas',
                 ),
               ),
             ],
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            const SliverToBoxAdapter(child: SizedBox(height: 32)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String key, String label, IconData icon) {
+    final isSelected = _selectedFilter == key;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return InkWell(
+      onTap: () => _selectFilter(key),
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary
+              : (isDark ? AppColors.surfaceDark : AppColors.white),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primary
+                : (isDark ? AppColors.gray700 : AppColors.gray300),
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  )
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 14,
+              color: isSelected
+                  ? AppColors.white
+                  : (isDark ? AppColors.gray300 : AppColors.gray700),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                color: isSelected
+                    ? AppColors.white
+                    : (isDark ? AppColors.gray300 : AppColors.gray700),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 }
+
+
 
 class _HistorySummarySection extends StatelessWidget {
   final int totalRoutes;
@@ -570,10 +1085,19 @@ class _HistoryLineCardState extends State<_HistoryLineCard> {
                                 if (line.obra != null && line.obra!.isNotEmpty)
                                   Padding(
                                     padding: const EdgeInsets.only(top: 2),
-                                    child: Text(
-                                      '📍 ${line.obra}',
-                                      style: const TextStyle(fontSize: 12, color: AppColors.gray600),
-                                      softWrap: true,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.place_outlined, size: 13, color: AppColors.gray600),
+                                        const SizedBox(width: 3),
+                                        Expanded(
+                                          child: Text(
+                                            line.obra!,
+                                            style: const TextStyle(fontSize: 12, color: AppColors.gray600),
+                                            softWrap: true,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                               ],
@@ -819,13 +1343,13 @@ class _HistoryLineCardState extends State<_HistoryLineCard> {
 
   String _getStateLabel(String state) {
     switch (state) {
-      case 'done': return '✓ Entregado';
-      case 'picked_up': return '📦 Recogido';
-      case 'in_progress': return '🚛 En camino';
-      case 'incomplete': return '⚠ Incompleta';
-      case 'partial': return '⚠ Parcial';
-      case 'cancelled': return '✗ Cancelado';
-      default: return '⏳ Pendiente';
+      case 'done': return 'Entregado';
+      case 'picked_up': return 'Recogido';
+      case 'in_progress': return 'En camino';
+      case 'incomplete': return 'Incompleta';
+      case 'partial': return 'Parcial';
+      case 'cancelled': return 'Cancelado';
+      default: return 'Pendiente';
     }
   }
 
@@ -881,35 +1405,4 @@ class _TimeChip extends StatelessWidget {
       ),
     );
   }
-}
-
-class _EmptyHistorySection extends StatelessWidget {
-  const _EmptyHistorySection();
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.all(20),
-      color: AppColors.gray50,
-      child: const Padding(
-        padding: EdgeInsets.all(48),
-        child: Column(
-          children: [
-            Icon(Icons.history, size: 64, color: AppColors.gray400),
-            SizedBox(height: 16),
-            Text(
-              'Sin historial de rutas',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.gray600),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Aquí aparecerán las rutas que hayas completado',
-              style: TextStyle(fontSize: 14, color: AppColors.gray500),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+}

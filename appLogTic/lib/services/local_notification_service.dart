@@ -22,7 +22,7 @@ class LocalNotificationService {
     if (_initialized) return;
 
     // Android initialization (default icon from AndroidManifest)
-    const androidSettings = AndroidInitializationSettings('@drawable/app_icon');
+    const androidSettings = AndroidInitializationSettings('@drawable/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -88,12 +88,13 @@ class LocalNotificationService {
     required String body,
     required Map<String, dynamic> data,
   }) async {
-    // Encode relevant data as payload for tap handling
-    final payloadData = <String, dynamic>{
-      'route': data['route'],
-      'title': title,
-      'body': body,
-    };
+    // Encode the full FCM data payload for tap handling.
+    // We must include ALL keys (especially route_ids) because Odoo does
+    // not send a 'route' key — only 'route_ids'. Passing the entire
+    // data map ensures _handleDeepLink can build the correct route.
+    final payloadData = Map<String, dynamic>.from(data)
+      ..['title'] = title
+      ..['body'] = body;
     final payload = jsonEncode(payloadData);
 
     // Android notification details with the custom channel
@@ -105,7 +106,7 @@ class LocalNotificationService {
       priority: Priority.high,
       playSound: true,
       enableVibration: true,
-      icon: '@drawable/app_icon',
+      icon: '@drawable/ic_launcher',
     );
 
     const iosDetails = DarwinNotificationDetails(

@@ -269,10 +269,10 @@ class _DriverRoutesDetailView extends StatelessWidget {
                               ),
                               child: Text(
                                 route.status == RouteStatus.completed
-                                    ? '✓ Completada'
+                                    ? 'Completada'
                                     : route.status == RouteStatus.inProgress
-                                        ? '→ En Curso'
-                                        : '○ Pendiente',
+                                        ? 'En Curso'
+                                        : 'Pendiente',
                                 style: const TextStyle(fontSize: 12, color: AppColors.white),
                               ),
                             ),

@@ -13,6 +13,10 @@ import './widgets/incomplete_reason_dialog.dart';
 import './widgets/supplier_info_dialog.dart';
 import '../../widgets/theme_toggle_button.dart';
 import '../../widgets/attachment_tile.dart';
+import '../../widgets/settings_dropdown_menu.dart';
+import '../../widgets/dynamic_search_bar.dart';
+import '../../widgets/pagination_bar.dart';
+import '../../utils/search_utils.dart';
 
 class RoutesScreen extends StatefulWidget {
   const RoutesScreen({super.key});
@@ -49,8 +53,6 @@ class _RoutesScreenState extends State<RoutesScreen> {
           _RoutesHeader(
             userName: auth.currentUser?.fullName ?? 'Conductor',
             isAdmin: isAdmin,
-            isConnected: odoo.isConnected,
-            lastSync: odoo.lastSyncTime,
             errorMessage: odoo.errorMessage,
             isLoading: odoo.isLoading,
             onSync: () {
@@ -84,8 +86,6 @@ class _RoutesScreenState extends State<RoutesScreen> {
 class _RoutesHeader extends StatelessWidget {
   final String userName;
   final bool isAdmin;
-  final bool isConnected;
-  final String lastSync;
   final String errorMessage;
   final bool isLoading;
   final VoidCallback onSync;
@@ -96,8 +96,6 @@ class _RoutesHeader extends StatelessWidget {
   const _RoutesHeader({
     required this.userName,
     required this.isAdmin,
-    required this.isConnected,
-    required this.lastSync,
     required this.errorMessage,
     required this.isLoading,
     required this.onSync,
@@ -154,50 +152,41 @@ class _RoutesHeader extends StatelessWidget {
                   padding: EdgeInsets.only(right: 2),
                   child: AnimatedThemeToggle(),
                 ),
-                IconButton(onPressed: onLogout, icon: const Icon(Icons.exit_to_app, color: AppColors.white)),
+                SettingsDropdownMenu(
+                  isAdmin: isAdmin,
+                  onLogout: onLogout,
+                ),
               ],
             ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                _ConnectionBadge(isConnected: isConnected, lastSync: lastSync),
-                if (errorMessage.isNotEmpty)
+            if (errorMessage.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(color: AppColors.error.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(12)),
-                    child: const Text('⚠️ Error', style: TextStyle(fontSize: 10, color: AppColors.white)),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.warning_amber_rounded, size: 14, color: AppColors.white),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            errorMessage,
+                            style: const TextStyle(fontSize: 11, color: AppColors.white),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-              ],
-            ),
+                ],
+              ),
+            ],
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _ConnectionBadge extends StatelessWidget {
-  final bool isConnected;
-  final String lastSync;
-  const _ConnectionBadge({required this.isConnected, required this.lastSync});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: isConnected ? AppColors.statusCompleted.withValues(alpha: 0.3) : AppColors.error.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Container(width: 8, height: 8, decoration: BoxDecoration(shape: BoxShape.circle, color: isConnected ? AppColors.statusCompletedLight : AppColors.error)),
-          const SizedBox(width: 6),
-          Text(
-            isConnected ? (lastSync.isNotEmpty ? 'Sync: $lastSync' : 'Conectado') : 'Desconectado',
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.white),
-          ),
-        ],
       ),
     );
   }
@@ -250,28 +239,327 @@ class _StatCardItem extends StatelessWidget {
   }
 }
 
-class _RoutesList extends StatelessWidget {
+class _RoutesList extends StatefulWidget {
   final OdooProvider odoo;
   const _RoutesList({required this.odoo});
 
   @override
-  Widget build(BuildContext context) {
-    final groupedRoutes = odoo.odooRoutes.where((r) => r.state != 'finished').toList();
-    if (groupedRoutes.isEmpty) return _EmptyStateCard(errorMessage: odoo.errorMessage);
+  State<_RoutesList> createState() => _RoutesListState();
+}
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      itemCount: groupedRoutes.length,
-      itemBuilder: (context, index) {
-        final route = groupedRoutes[index];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: _ExpandableRouteCard(routeName: route.name, routeLines: route.routeLines, routeData: route, odoo: odoo),
-        );
-      },
+class _RoutesListState extends State<_RoutesList> {
+  final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  String _searchQuery = '';
+  String _statusFilter = 'all'; // 'all', 'in_progress', 'pending', 'completed'
+  int _currentPage = 1;
+  int _pageSize = 5;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    setState(() {
+      _searchQuery = value;
+      _currentPage = 1;
+    });
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    setState(() {
+      _searchQuery = '';
+      _currentPage = 1;
+    });
+  }
+
+  void _setStatusFilter(String filter) {
+    setState(() {
+      _statusFilter = filter;
+      _currentPage = 1;
+    });
+  }
+
+  void _resetFilters() {
+    _searchController.clear();
+    setState(() {
+      _searchQuery = '';
+      _statusFilter = 'all';
+      _currentPage = 1;
+    });
+  }
+
+  List<RouteData> _filterRoutes(List<RouteData> allRoutes) {
+    return allRoutes.where((route) {
+      if (route.state == 'finished') return false;
+
+      // Filter by search text (case & accent insensitive multi-term search)
+      if (_searchQuery.trim().isNotEmpty) {
+        final List<String?> fields = [
+          route.name,
+          route.date,
+        ];
+
+        for (final line in route.routeLines) {
+          fields.addAll([
+            line.partnerId.name,
+            line.street,
+            line.originAddress,
+            line.destinationAddress,
+            line.obra,
+            line.orderName,
+            line.notes,
+          ]);
+        }
+
+        if (!SearchUtils.matchesAny(fields, _searchQuery)) {
+          return false;
+        }
+      }
+
+      // Filter by status
+      if (_statusFilter != 'all') {
+        bool statusMatch = false;
+        switch (_statusFilter) {
+          case 'in_progress':
+            statusMatch = route.routeLines.any((l) => l.state == 'in_progress' || l.state == 'picked_up');
+            break;
+          case 'pending':
+            statusMatch = route.routeLines.any((l) => l.state == 'pending');
+            break;
+          case 'completed':
+            statusMatch = route.routeLines.any((l) => ['done', 'incomplete', 'partial'].contains(l.state));
+            break;
+        }
+        if (!statusMatch) return false;
+      }
+
+      return true;
+    }).toList();
+  }
+
+  void _goToPage(int page, int totalPages) {
+    if (page < 1 || page > totalPages) return;
+    setState(() => _currentPage = page);
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final allRoutes = widget.odoo.odooRoutes.where((r) => r.state != 'finished').toList();
+
+    if (allRoutes.isEmpty) {
+      return _EmptyStateCard(errorMessage: widget.odoo.errorMessage);
+    }
+
+    final filteredRoutes = _filterRoutes(allRoutes);
+    final totalPages = (filteredRoutes.isEmpty || _pageSize <= 0)
+        ? 1
+        : (filteredRoutes.length / _pageSize).ceil();
+
+    if (_currentPage > totalPages && totalPages > 0) {
+      _currentPage = totalPages;
+    }
+
+    final startIndex = (_currentPage - 1) * _pageSize;
+    final paginatedRoutes = filteredRoutes.skip(startIndex).take(_pageSize).toList();
+    final isFiltering = _searchQuery.isNotEmpty || _statusFilter != 'all';
+
+    // Count stops for badge
+    final totalStops = filteredRoutes.fold<int>(0, (sum, r) => sum + r.routeLines.length);
+
+    return Column(
+      children: [
+        // Search & Filter header
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Column(
+            children: [
+              // Search input
+              DynamicSearchBar(
+                controller: _searchController,
+                hintText: 'Buscar entrega, cliente, dirección o pedido...',
+                onChanged: _onSearchChanged,
+                onClear: _clearSearch,
+              ),
+              const SizedBox(height: 8),
+
+              // Filter Chips
+              Row(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _buildFilterChip('all', 'Todas (${allRoutes.length})', Icons.all_inclusive, isDark),
+                          const SizedBox(width: 6),
+                          _buildFilterChip('in_progress', 'En curso', Icons.local_shipping, isDark),
+                          const SizedBox(width: 6),
+                          _buildFilterChip('pending', 'Pendientes', Icons.schedule, isDark),
+                          const SizedBox(width: 6),
+                          _buildFilterChip('completed', 'Completadas', Icons.check_circle_outline, isDark),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (isFiltering) ...[
+                    const SizedBox(width: 6),
+                    GestureDetector(
+                      onTap: _resetFilters,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.error.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text(
+                          'Limpiar',
+                          style: TextStyle(fontSize: 11, color: AppColors.error, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        // Route list or empty search results
+        Expanded(
+          child: filteredRoutes.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.search_off_rounded, size: 54, color: AppColors.gray400),
+                        const SizedBox(height: 12),
+                        Text(
+                          'No hay entregas que coincidan con la búsqueda',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? AppColors.gray300 : AppColors.gray600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        ElevatedButton.icon(
+                          onPressed: _resetFilters,
+                          icon: const Icon(Icons.refresh, size: 16),
+                          label: const Text('Mostrar todas'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: AppColors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  itemCount: paginatedRoutes.length + (totalPages > 1 || allRoutes.length > 5 ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index == paginatedRoutes.length) {
+                      return PaginationBar(
+                        currentPage: _currentPage,
+                        totalPages: totalPages,
+                        totalItems: filteredRoutes.length,
+                        pageSize: _pageSize,
+                        pageSizeOptions: const [3, 5, 10, 50],
+                        onPageChanged: (p) => _goToPage(p, totalPages),
+                        onPageSizeChanged: (s) {
+                          setState(() {
+                            _pageSize = s;
+                            _currentPage = 1;
+                          });
+                        },
+                        itemLabel: 'rutas ($totalStops paradas)',
+                      );
+                    }
+
+                    final route = paginatedRoutes[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 14),
+                      child: _ExpandableRouteCard(
+                        routeName: route.name,
+                        routeLines: route.routeLines,
+                        routeData: route,
+                        odoo: widget.odoo,
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterChip(String key, String label, IconData icon, bool isDark) {
+    final isSelected = _statusFilter == key;
+    return InkWell(
+      onTap: () => _setStatusFilter(key),
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary
+              : (isDark ? AppColors.surfaceDark : AppColors.white),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primary
+                : (isDark ? AppColors.gray700 : AppColors.gray300),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 13,
+              color: isSelected
+                  ? AppColors.white
+                  : (isDark ? AppColors.gray300 : AppColors.gray700),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                color: isSelected
+                    ? AppColors.white
+                    : (isDark ? AppColors.gray300 : AppColors.gray700),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
+
+
 
 class _EmptyStateCard extends StatelessWidget {
   final String errorMessage;
@@ -290,7 +578,14 @@ class _EmptyStateCard extends StatelessWidget {
               const Icon(Icons.local_shipping, size: 64, color: AppColors.gray400),
               const SizedBox(height: 16),
               if (errorMessage.isNotEmpty) ...[
-                const Text('⚠️ Error de sincronización', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: AppColors.error)),
+                const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.error_outline, color: AppColors.error, size: 20),
+                    SizedBox(width: 6),
+                    Text('Error de sincronización', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: AppColors.error)),
+                  ],
+                ),
                 const SizedBox(height: 8),
                 Text(errorMessage, style: const TextStyle(fontSize: 14, color: AppColors.gray600), textAlign: TextAlign.center),
               ] else ...[
@@ -305,6 +600,7 @@ class _EmptyStateCard extends StatelessWidget {
     );
   }
 }
+
 
 class _ExpandableRouteCard extends StatefulWidget {
   final String routeName;
@@ -392,7 +688,14 @@ class _ExpandableRouteCardState extends State<_ExpandableRouteCard> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(color: AppColors.error.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(6)),
-                        child: const Text('⚠ URGENTE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.error)),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(Icons.warning_amber_rounded, size: 12, color: AppColors.error),
+                            SizedBox(width: 3),
+                            Text('URGENTE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.error)),
+                          ],
+                        ),
                       ),
                     const SizedBox(width: 8),
                     Icon(_isExpanded ? Icons.expand_less : Icons.expand_more, color: Theme.of(context).primaryColor),
@@ -626,10 +929,19 @@ class _RouteActivityCardState extends State<_RouteActivityCard> {
                                 if (widget.line.obra != null && widget.line.obra!.isNotEmpty)
                                   Padding(
                                     padding: const EdgeInsets.only(top: 2),
-                                    child: Text(
-                                      '📍 ${widget.line.obra}',
-                                      style: const TextStyle(fontSize: 12, color: AppColors.gray600),
-                                      softWrap: true,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.place_outlined, size: 13, color: AppColors.gray600),
+                                        const SizedBox(width: 3),
+                                        Expanded(
+                                          child: Text(
+                                            widget.line.obra!,
+                                            style: const TextStyle(fontSize: 12, color: AppColors.gray600),
+                                            softWrap: true,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                               ],
@@ -941,13 +1253,13 @@ class _RouteActivityCardState extends State<_RouteActivityCard> {
 
   String _getStateLabel(String state) {
     switch (state) {
-      case 'done': return '✓ Entregado';
-      case 'picked_up': return '📦 Recogido';
-      case 'in_progress': return '🚛 En camino';
-      case 'incomplete': return '⚠ Incompleta';
-      case 'partial': return '⚠ Parcial';
-      case 'cancelled': return '✗ Cancelado';
-      default: return '⏳ Pendiente';
+      case 'done': return 'Entregado';
+      case 'picked_up': return 'Recogido';
+      case 'in_progress': return 'En camino';
+      case 'incomplete': return 'Incompleta';
+      case 'partial': return 'Parcial';
+      case 'cancelled': return 'Cancelado';
+      default: return 'Pendiente';
     }
   }
 
