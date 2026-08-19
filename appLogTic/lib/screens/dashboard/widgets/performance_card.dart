@@ -24,10 +24,10 @@ class PerformanceCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
+                    color: context.greenTextColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.speed, color: AppColors.primary, size: 22),
+                  child: Icon(Icons.speed, color: context.greenTextColor, size: 22),
                 ),
                 const SizedBox(width: 10),
                 const Text('Rendimiento', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
@@ -42,13 +42,13 @@ class PerformanceCard extends StatelessWidget {
                   value: performance?.avgDeliveryTimeFormatted.isNotEmpty == true ? performance!.avgDeliveryTimeFormatted : '--',
                   label: 'Prom. Entrega',
                 ),
-                Container(height: 50, width: 1, color: AppColors.gray200),
+                Container(height: 50, width: 1, color: context.borderColor),
                 PerformanceMetric(
                   icon: Icons.route_outlined,
                   value: performance?.avgRouteTimeFormatted.isNotEmpty == true ? performance!.avgRouteTimeFormatted : '--',
                   label: 'Prom. Ruta',
                 ),
-                Container(height: 50, width: 1, color: AppColors.gray200),
+                Container(height: 50, width: 1, color: context.borderColor),
                 PerformanceMetric(
                   icon: Icons.trending_up,
                   value: '${(stats?.summary.completionRate ?? 0).toInt()}%',
@@ -73,10 +73,10 @@ class PerformanceMetric extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(icon, color: AppColors.corpGreen, size: 28),
+        Icon(icon, color: context.greenTextColor, size: 28),
         const SizedBox(height: 8),
-        Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: context.onSurfaceColor)),
-        Text(label, style: TextStyle(fontSize: 11, color: context.onSurfaceColor.withValues(alpha: 0.7))),
+        Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: context.primaryTextColor)),
+        Text(label, style: TextStyle(fontSize: 11, color: context.subtextColor)),
       ],
     );
   }

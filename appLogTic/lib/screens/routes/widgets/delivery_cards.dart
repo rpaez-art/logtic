@@ -171,10 +171,10 @@ class _ExpandableRouteCardState extends State<ExpandableRouteCard> {
                     Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: isUrgent ? AppColors.error.withValues(alpha: 0.2) : AppColors.primary.withValues(alpha: 0.1),
+                        color: isUrgent ? AppColors.error.withValues(alpha: 0.2) : context.greenTextColor.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(isUrgent ? Icons.warning : Icons.route, color: isUrgent ? AppColors.error : AppColors.primary, size: 20),
+                      child: Icon(isUrgent ? Icons.warning : Icons.route, color: isUrgent ? AppColors.error : context.greenTextColor, size: 20),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -191,7 +191,7 @@ class _ExpandableRouteCardState extends State<ExpandableRouteCard> {
                                 Expanded(
                                   child: Text(
                                     obra,
-                                    style: const TextStyle(fontSize: 12, color: AppColors.gray600),
+                                    style: TextStyle(fontSize: 12, color: context.subtextColor),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -216,18 +216,18 @@ class _ExpandableRouteCardState extends State<ExpandableRouteCard> {
                         ),
                       ),
                     const SizedBox(width: 8),
-                    Icon(_isExpanded ? Icons.expand_less : Icons.expand_more, color: Theme.of(context).primaryColor),
+                    Icon(_isExpanded ? Icons.expand_less : Icons.expand_more, color: context.greenTextColor),
                   ]),
                   const SizedBox(height: 8),
                   Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    Text('$completedCount de $totalCount entregas', style: const TextStyle(fontSize: 12, color: AppColors.gray600)),
-                    Text('${(progress * 100).toInt()}%', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.statusCompletedLight)),
+                    Text('$completedCount de $totalCount entregas', style: TextStyle(fontSize: 12, color: context.subtextColor)),
+                    Text('${(progress * 100).toInt()}%', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: context.greenTextColor)),
                   ]),
                   const SizedBox(height: 4),
                   LinearProgressIndicator(
                     value: progress,
-                    backgroundColor: AppColors.gray200,
-                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.statusCompletedLight),
+                    backgroundColor: context.isDarkMode ? const Color(0xFF383C3E) : AppColors.gray200,
+                    valueColor: AlwaysStoppedAnimation<Color>(context.greenTextColor),
                     minHeight: 6,
                   ),
                   if (widget.routeData.startDate != null && widget.routeData.startDate!.isNotEmpty) ...[
@@ -235,7 +235,7 @@ class _ExpandableRouteCardState extends State<ExpandableRouteCard> {
                     Row(children: [
                       const Icon(Icons.play_arrow, size: 14, color: AppColors.accent),
                       const SizedBox(width: 4),
-                      Text(_formatDateTime(widget.routeData.startDate!), style: const TextStyle(fontSize: 11, color: AppColors.gray600)),
+                      Text(_formatDateTime(widget.routeData.startDate!), style: TextStyle(fontSize: 11, color: context.subtextColor)),
                     ]),
                   ],
                 ],
@@ -245,9 +245,9 @@ class _ExpandableRouteCardState extends State<ExpandableRouteCard> {
           if (_isExpanded)
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: const BoxDecoration(
-                color: AppColors.gray100,
-                borderRadius: BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)),
+              decoration: BoxDecoration(
+                color: context.containerColor,
+                borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)),
               ),
               child: Column(
                 children: widget.routeLines.map((line) => Padding(
@@ -379,7 +379,7 @@ class _RouteActivityCardState extends State<RouteActivityCard> {
                                       ),
                                     ),
                                     const SizedBox(width: 4),
-                                    const Icon(Icons.info_outline_rounded, size: 16, color: AppColors.primary),
+                                    Icon(Icons.info_outline_rounded, size: 16, color: context.greenTextColor),
                                   ],
                                 ),
                                 if (widget.line.obra != null && widget.line.obra!.isNotEmpty)
@@ -388,12 +388,12 @@ class _RouteActivityCardState extends State<RouteActivityCard> {
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Icon(Icons.place_outlined, size: 13, color: AppColors.gray600),
+                                        Icon(Icons.place_outlined, size: 13, color: context.subtextColor),
                                         const SizedBox(width: 3),
                                         Expanded(
                                           child: Text(
                                             widget.line.obra!,
-                                            style: const TextStyle(fontSize: 12, color: AppColors.gray600),
+                                            style: TextStyle(fontSize: 12, color: context.subtextColor),
                                             softWrap: true,
                                           ),
                                         ),
@@ -448,7 +448,7 @@ class _RouteActivityCardState extends State<RouteActivityCard> {
                           if (widget.line.originAddress != null && widget.line.originAddress!.isNotEmpty)
                             Text(
                               widget.line.originAddress!,
-                              style: const TextStyle(fontSize: 12, color: AppColors.gray500),
+                              style: const TextStyle(fontSize: 13),
                             )
                           else if (_currentLocation.first != null && _currentLocation.second != null)
                             Text(
@@ -481,7 +481,7 @@ class _RouteActivityCardState extends State<RouteActivityCard> {
                             Text(widget.line.street!, style: const TextStyle(fontSize: 13)),
                           ],
                           if (widget.line.city != null && widget.line.city!.isNotEmpty)
-                            Text(widget.line.city!, style: const TextStyle(fontSize: 11, color: AppColors.gray600)),
+                            Text(widget.line.city!, style: TextStyle(fontSize: 11, color: context.subtextColor)),
                         ],
                       ),
                     ),
@@ -514,15 +514,15 @@ class _RouteActivityCardState extends State<RouteActivityCard> {
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(color: Theme.of(context).primaryColor.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(10)),
+                  decoration: BoxDecoration(color: context.greenTextColor.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(10)),
                   child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                     Row(children: [
-                      const Icon(Icons.inventory, size: 18, color: AppColors.primary),
+                      Icon(Icons.inventory, size: 18, color: context.greenTextColor),
                       const SizedBox(width: 8),
-                      Text('${widget.line.orderLines!.length} productos', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.primary)),
-                      if (widget.line.orderName != null) Text(' • ${widget.line.orderName}', style: const TextStyle(fontSize: 11, color: AppColors.gray600)),
+                      Text('${widget.line.orderLines!.length} productos', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: context.greenTextColor)),
+                      if (widget.line.orderName != null) Text(' • ${widget.line.orderName}', style: TextStyle(fontSize: 11, color: context.subtextColor)),
                     ]),
-                    Icon(_showProducts ? Icons.expand_less : Icons.expand_more, color: AppColors.primary, size: 20),
+                    Icon(_showProducts ? Icons.expand_less : Icons.expand_more, color: context.greenTextColor, size: 20),
                   ]),
                 ),
               ),
@@ -534,7 +534,7 @@ class _RouteActivityCardState extends State<RouteActivityCard> {
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                         Expanded(child: Text(orderLine.productName, style: const TextStyle(fontSize: 12))),
-                        Text('${orderLine.quantity.toInt()} ${orderLine.uom}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.primary)),
+                        Text('${orderLine.quantity.toInt()} ${orderLine.uom}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: context.greenTextColor)),
                       ]),
                     )).toList(),
                   ),
@@ -580,7 +580,7 @@ class _RouteActivityCardState extends State<RouteActivityCard> {
             },
             icon: const Icon(Icons.play_arrow, size: 18),
             label: const Text('Iniciar', style: TextStyle(fontSize: 13)),
-            style: OutlinedButton.styleFrom(foregroundColor: AppColors.primary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            style: OutlinedButton.styleFrom(foregroundColor: context.greenTextColor, side: BorderSide(color: context.greenTextColor), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
           )
         ];
       case 'in_progress':

@@ -58,10 +58,17 @@ class AppColors {
   static const Color info = Color(0xFFA2B2C8);
   static const Color success = Color(0xFF1D3C34);
 
-  // Modo Oscuro Surfaces
+  // Modo Oscuro
   static const Color surfaceDark = Color(0xFF25282A);
   static const Color surfaceDarkMedium = Color(0xFF1E2022);
   static const Color backgroundDark = Color(0xFF141617);
+
+  // Modo Oscuro - Colores de Texto y Acentos Claros
+  static const Color darkTextWhite = Color(0xFFFFFFFF);         // Blanco nítido
+  static const Color darkTextMuted = Color(0xFFCBD5E1);         // Blanco suave / gris claro
+  static const Color darkGreen = Color(0xFF4ADE80);             // Verde claro brillante
+  static const Color darkGreenSoft = Color(0xFF86EFAC);         // Verde claro suave
+  static const Color darkGreenMint = Color(0xFF52B788);         // Verde menta
 }
 
 class AppTheme {
@@ -171,30 +178,50 @@ class AppTheme {
     useMaterial3: true,
     brightness: Brightness.dark,
     colorScheme: ColorScheme.dark(
-      primary: AppColors.primaryLight,
-      onPrimary: AppColors.white,
-      primaryContainer: AppColors.primary.withValues(alpha: 0.3),
+      primary: AppColors.darkGreen,
+      onPrimary: const Color(0xFF141617),
+      primaryContainer: AppColors.primary.withValues(alpha: 0.5),
+      onPrimaryContainer: AppColors.darkGreenSoft,
       secondary: AppColors.secondaryLight,
       onSecondary: AppColors.black,
       secondaryContainer: AppColors.secondary.withValues(alpha: 0.3),
       tertiary: AppColors.accentLight,
       error: AppColors.errorLight,
       surface: const Color(0xFF25282A),
-      onSurface: AppColors.white,
-      onSurfaceVariant: AppColors.gray400,
-      outline: AppColors.gray600,
+      onSurface: AppColors.darkTextWhite,
+      onSurfaceVariant: AppColors.darkTextMuted,
+      outline: const Color(0xFF4B5563),
+    ),
+    textTheme: const TextTheme(
+      displayLarge: TextStyle(color: AppColors.darkTextWhite),
+      displayMedium: TextStyle(color: AppColors.darkTextWhite),
+      displaySmall: TextStyle(color: AppColors.darkTextWhite),
+      headlineLarge: TextStyle(color: AppColors.darkTextWhite),
+      headlineMedium: TextStyle(color: AppColors.darkTextWhite),
+      headlineSmall: TextStyle(color: AppColors.darkTextWhite),
+      titleLarge: TextStyle(color: AppColors.darkTextWhite),
+      titleMedium: TextStyle(color: AppColors.darkTextWhite),
+      titleSmall: TextStyle(color: AppColors.darkTextWhite),
+      bodyLarge: TextStyle(color: AppColors.darkTextWhite),
+      bodyMedium: TextStyle(color: AppColors.darkTextMuted),
+      bodySmall: TextStyle(color: AppColors.darkTextMuted),
+      labelLarge: TextStyle(color: AppColors.darkTextWhite),
+      labelMedium: TextStyle(color: AppColors.darkGreen),
+      labelSmall: TextStyle(color: AppColors.darkTextMuted),
     ),
     scaffoldBackgroundColor: const Color(0xFF141617),
     appBarTheme: const AppBarTheme(
       centerTitle: false,
       elevation: 0,
       backgroundColor: Color(0xFF1D3C34),
-      foregroundColor: AppColors.white,
+      foregroundColor: AppColors.darkTextWhite,
     ),
     dialogTheme: DialogThemeData(
       backgroundColor: const Color(0xFF25282A),
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      titleTextStyle: const TextStyle(color: AppColors.darkTextWhite, fontSize: 18, fontWeight: FontWeight.bold),
+      contentTextStyle: const TextStyle(color: AppColors.darkTextMuted, fontSize: 14),
     ),
     bottomSheetTheme: const BottomSheetThemeData(
       backgroundColor: Color(0xFF25282A),
@@ -213,6 +240,8 @@ class AppTheme {
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         elevation: 2,
+        backgroundColor: AppColors.darkGreen,
+        foregroundColor: const Color(0xFF141617),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -221,10 +250,12 @@ class AppTheme {
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
+        foregroundColor: AppColors.darkGreen,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
+        side: const BorderSide(color: AppColors.darkGreen),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
@@ -232,36 +263,40 @@ class AppTheme {
       fillColor: const Color(0xFF1E2022),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.gray600),
+        borderSide: const BorderSide(color: Color(0xFF4B5563)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.gray600),
+        borderSide: const BorderSide(color: Color(0xFF4B5563)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.primaryLight, width: 2),
+        borderSide: const BorderSide(color: AppColors.darkGreen, width: 2),
       ),
+      labelStyle: const TextStyle(color: AppColors.darkTextMuted),
+      hintStyle: const TextStyle(color: Color(0xFF94A3B8)),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     ),
     chipTheme: ChipThemeData(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
       ),
+      backgroundColor: const Color(0xFF1E2022),
+      labelStyle: const TextStyle(color: AppColors.darkTextWhite),
     ),
     dividerTheme: const DividerThemeData(
       color: Color(0xFF383C3E),
       thickness: 1,
     ),
     floatingActionButtonTheme: const FloatingActionButtonThemeData(
-      backgroundColor: AppColors.secondaryLight,
-      foregroundColor: AppColors.black,
+      backgroundColor: AppColors.darkGreen,
+      foregroundColor: Color(0xFF141617),
       elevation: 8,
     ),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: Color(0xFF1E2022),
-      selectedItemColor: AppColors.secondaryLight,
-      unselectedItemColor: AppColors.gray400,
+      selectedItemColor: AppColors.darkGreen,
+      unselectedItemColor: Color(0xFF94A3B8),
     ),
   );
 }
@@ -273,5 +308,8 @@ extension ThemeContextExtension on BuildContext {
   Color get onSurfaceColor => Theme.of(this).colorScheme.onSurface;
   Color get containerColor => isDarkMode ? const Color(0xFF1E2022) : AppColors.gray50;
   Color get borderColor => isDarkMode ? const Color(0xFF383C3E) : AppColors.gray200;
-  Color get subtextColor => isDarkMode ? AppColors.gray400 : AppColors.gray600;
+  Color get subtextColor => isDarkMode ? AppColors.darkTextMuted : AppColors.gray600;
+  Color get primaryTextColor => isDarkMode ? AppColors.darkTextWhite : AppColors.gray900;
+  Color get greenTextColor => isDarkMode ? AppColors.darkGreen : AppColors.corpGreen;
+  Color get accentTextColor => isDarkMode ? AppColors.darkGreenSoft : AppColors.primary;
 }

@@ -89,11 +89,11 @@ class _DashboardHistoryCardState extends State<DashboardHistoryCard> {
                             const SizedBox(height: 2),
                             Row(
                               children: [
-                                const Icon(Icons.calendar_today, size: 14, color: AppColors.gray500),
+                                Icon(Icons.calendar_today, size: 14, color: context.subtextColor),
                                 const SizedBox(width: 4),
                                 Text(
                                   item.date,
-                                  style: const TextStyle(fontSize: 12, color: AppColors.gray500),
+                                  style: TextStyle(fontSize: 12, color: context.subtextColor),
                                 ),
                               ],
                             ),
@@ -105,11 +105,11 @@ class _DashboardHistoryCardState extends State<DashboardHistoryCard> {
                         children: [
                           Text(
                             item.durationFormatted,
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.corpGreen),
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: context.greenTextColor),
                           ),
                           Text(
                             '${item.completedDeliveries}/${item.totalDeliveries}',
-                            style: const TextStyle(fontSize: 12, color: AppColors.gray500),
+                            style: TextStyle(fontSize: 12, color: context.subtextColor),
                           ),
                         ],
                       ),
@@ -121,9 +121,9 @@ class _DashboardHistoryCardState extends State<DashboardHistoryCard> {
                       Expanded(
                         child: LinearProgressIndicator(
                           value: completionRate / 100,
-                          backgroundColor: AppColors.gray200,
+                          backgroundColor: context.isDarkMode ? const Color(0xFF383C3E) : AppColors.gray200,
                           valueColor: AlwaysStoppedAnimation<Color>(
-                            completionRate >= 100 ? AppColors.statusCompleted : AppColors.secondary,
+                            completionRate >= 100 ? context.greenTextColor : AppColors.secondary,
                           ),
                           minHeight: 6,
                         ),
@@ -134,7 +134,7 @@ class _DashboardHistoryCardState extends State<DashboardHistoryCard> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: completionRate >= 100 ? AppColors.statusCompleted : AppColors.secondary,
+                          color: completionRate >= 100 ? context.greenTextColor : AppColors.secondary,
                         ),
                       ),
                     ],
@@ -171,9 +171,9 @@ class _DashboardHistoryCardState extends State<DashboardHistoryCard> {
                               child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.accentDark),
                             ),
                             const SizedBox(width: 6),
-                            const Text(
+                            Text(
                               'Cargando entregas...',
-                              style: TextStyle(fontSize: 10, color: AppColors.gray500),
+                              style: TextStyle(fontSize: 10, color: context.subtextColor),
                             ),
                           ],
                         )
@@ -185,7 +185,7 @@ class _DashboardHistoryCardState extends State<DashboardHistoryCard> {
                             hasLines
                                 ? '${item.lines!.length} entregas'
                                 : 'Ver entregas',
-                            style: const TextStyle(fontSize: 11, color: AppColors.gray500),
+                            style: TextStyle(fontSize: 11, color: context.subtextColor),
                           ),
                           const SizedBox(width: 4),
                           AnimatedRotation(
@@ -194,7 +194,7 @@ class _DashboardHistoryCardState extends State<DashboardHistoryCard> {
                             child: Icon(
                               Icons.keyboard_arrow_down,
                               size: 20,
-                              color: AppColors.primary,
+                              color: context.greenTextColor,
                             ),
                           ),
                         ],
@@ -359,10 +359,10 @@ class _DashboardLineCardState extends State<DashboardLineCard> {
                                         ),
                                       ),
                                       const SizedBox(width: 4),
-                                      const Icon(
+                                      Icon(
                                         Icons.info_outline_rounded,
                                         size: 14,
-                                        color: AppColors.primary,
+                                        color: context.greenTextColor,
                                       ),
                                     ],
                                   ),
@@ -372,12 +372,12 @@ class _DashboardLineCardState extends State<DashboardLineCard> {
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          const Icon(Icons.place_outlined, size: 12, color: AppColors.gray600),
+                                          Icon(Icons.place_outlined, size: 12, color: context.subtextColor),
                                           const SizedBox(width: 3),
                                           Expanded(
                                             child: Text(
                                               line.obra!,
-                                              style: const TextStyle(fontSize: 11, color: AppColors.gray600),
+                                              style: TextStyle(fontSize: 11, color: context.subtextColor),
                                               softWrap: true,
                                             ),
                                           ),
@@ -429,16 +429,16 @@ class _DashboardLineCardState extends State<DashboardLineCard> {
                               if (_originAddress != null && _originAddress!.isNotEmpty)
                                 Text(
                                   _originAddress!,
-                                  style: const TextStyle(fontSize: 11, color: AppColors.gray500),
+                                  style: const TextStyle(fontSize: 11),
                                 )
                               else ...[
                                 Text(
                                   'Desde: Mi ubicación',
                                   style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: context.subtextColor),
                                 ),
-                                const Text(
+                                Text(
                                   'Tu posición actual (GPS)',
-                                  style: TextStyle(fontSize: 11, color: AppColors.gray500),
+                                  style: TextStyle(fontSize: 11, color: context.subtextColor),
                                 ),
                               ],
                             ],
@@ -446,10 +446,7 @@ class _DashboardLineCardState extends State<DashboardLineCard> {
                         ),
                       ],
                     ),
-                    const Padding(
-                      padding: EdgeInsets.only(left: 7, top: 4, bottom: 4),
-                      child: Icon(Icons.arrow_downward, size: 12, color: AppColors.gray400),
-                    ),
+                    const SizedBox(height: 6),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -470,7 +467,7 @@ class _DashboardLineCardState extends State<DashboardLineCard> {
                                 Text(line.street!, style: const TextStyle(fontSize: 12)),
                               ],
                               if (line.city != null && line.city!.isNotEmpty)
-                                Text(line.city!, style: const TextStyle(fontSize: 10, color: AppColors.gray500)),
+                                Text(line.city!, style: TextStyle(fontSize: 10, color: context.subtextColor)),
                             ],
                           ),
                         ),
@@ -533,7 +530,7 @@ class _DashboardLineCardState extends State<DashboardLineCard> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.05),
+                      color: context.greenTextColor.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -541,17 +538,17 @@ class _DashboardLineCardState extends State<DashboardLineCard> {
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.inventory, size: 16, color: AppColors.primary),
+                            Icon(Icons.inventory, size: 16, color: context.greenTextColor),
                             const SizedBox(width: 6),
                             Text(
                               '${line.orderLines!.length} productos',
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.primary),
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: context.greenTextColor),
                             ),
                             if (line.orderName != null)
-                              Text(' • ${line.orderName}', style: const TextStyle(fontSize: 10, color: AppColors.gray500)),
+                              Text(' • ${line.orderName}', style: TextStyle(fontSize: 10, color: context.subtextColor)),
                           ],
                         ),
-                        Icon(_showProducts ? Icons.expand_less : Icons.expand_more, color: AppColors.primary, size: 18),
+                        Icon(_showProducts ? Icons.expand_less : Icons.expand_more, color: context.greenTextColor, size: 18),
                       ],
                     ),
                   ),
@@ -569,7 +566,7 @@ class _DashboardLineCardState extends State<DashboardLineCard> {
                                     Expanded(child: Text(orderLine.productName, style: const TextStyle(fontSize: 11))),
                                     Text(
                                       '${orderLine.quantity.toInt()} ${orderLine.uom}',
-                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.primary),
+                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: context.greenTextColor),
                                     ),
                                   ],
                                 ),

@@ -121,9 +121,9 @@ class _ShellScreenState extends State<ShellScreen> {
         currentIndex: current,
         onTap: (index) => _navigate(current, index),
         type: BottomNavigationBarType.fixed,
-        backgroundColor: AppColors.white,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.gray500,
+        backgroundColor: context.isDarkMode ? const Color(0xFF1E2022) : AppColors.white,
+        selectedItemColor: context.greenTextColor,
+        unselectedItemColor: context.isDarkMode ? const Color(0xFF94A3B8) : AppColors.gray500,
         selectedFontSize: 12,
         unselectedFontSize: 12,
         elevation: 0,
@@ -178,17 +178,17 @@ class _ShellScreenState extends State<ShellScreen> {
             leading: RailHeader(user: user, isAdmin: isAdmin),
             trailing: RailTrailing(auth: auth, isAdmin: isAdmin),
             labelType: NavigationRailLabelType.all,
-            backgroundColor: AppColors.white,
-            indicatorColor: AppColors.primary.withValues(alpha: 0.12),
-            selectedIconTheme: const IconThemeData(color: AppColors.primary),
-            unselectedIconTheme: const IconThemeData(color: AppColors.gray500),
-            selectedLabelTextStyle: const TextStyle(
-              color: AppColors.primary,
+            backgroundColor: context.isDarkMode ? const Color(0xFF1E2022) : AppColors.white,
+            indicatorColor: context.greenTextColor.withValues(alpha: 0.15),
+            selectedIconTheme: IconThemeData(color: context.greenTextColor),
+            unselectedIconTheme: IconThemeData(color: context.isDarkMode ? const Color(0xFF94A3B8) : AppColors.gray500),
+            selectedLabelTextStyle: TextStyle(
+              color: context.greenTextColor,
               fontWeight: FontWeight.bold,
               fontSize: 12,
             ),
-            unselectedLabelTextStyle: const TextStyle(
-              color: AppColors.gray500,
+            unselectedLabelTextStyle: TextStyle(
+              color: context.isDarkMode ? const Color(0xFF94A3B8) : AppColors.gray500,
               fontSize: 12,
             ),
             minWidth: 80,
@@ -297,14 +297,14 @@ class _ShellScreenState extends State<ShellScreen> {
                   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                   child: Divider(),
                 ),
-                const Padding(
-                  padding: EdgeInsets.only(left: 20, bottom: 4),
+                Padding(
+                  padding: const EdgeInsets.only(left: 20, bottom: 4),
                   child: Text(
                     'HERRAMIENTAS',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.gray500,
+                      color: context.subtextColor,
                       letterSpacing: 1.5,
                     ),
                   ),
@@ -334,14 +334,14 @@ class _ShellScreenState extends State<ShellScreen> {
                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     child: Divider(),
                   ),
-                  const Padding(
-                    padding: EdgeInsets.only(left: 20, bottom: 4),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 20, bottom: 4),
                     child: Text(
                       'ADMINISTRACIÓN',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.gray500,
+                        color: context.subtextColor,
                         letterSpacing: 1.5,
                       ),
                     ),
@@ -384,7 +384,7 @@ class _ShellScreenState extends State<ShellScreen> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               border: Border(
-                top: BorderSide(color: AppColors.gray200),
+                top: BorderSide(color: context.borderColor),
               ),
             ),
             child: SizedBox(
@@ -398,8 +398,8 @@ class _ShellScreenState extends State<ShellScreen> {
                 icon: const Icon(Icons.logout_rounded, size: 18),
                 label: const Text('Cerrar sesión'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.gray600,
-                  side: const BorderSide(color: AppColors.gray300),
+                  foregroundColor: context.isDarkMode ? AppColors.darkGreen : AppColors.gray600,
+                  side: BorderSide(color: context.isDarkMode ? AppColors.darkGreen : AppColors.gray300),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

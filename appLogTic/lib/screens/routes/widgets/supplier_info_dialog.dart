@@ -612,14 +612,14 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
+        Icon(icon, size: 18, color: context.greenTextColor),
         const SizedBox(width: 8),
         Text(
           title,
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.bold,
-            color: context.onSurfaceColor,
+            color: context.primaryTextColor,
           ),
         ),
       ],

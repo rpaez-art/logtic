@@ -214,10 +214,10 @@ class _RouteLineDetailScreenState extends State<RouteLineDetailScreen> {
                               ),
                             ),
                             const SizedBox(width: 4),
-                            const Icon(
+                            Icon(
                               Icons.info_outline_rounded,
                               size: 18,
-                              color: AppColors.primary,
+                              color: context.greenTextColor,
                             ),
                           ],
                         ),
@@ -273,10 +273,7 @@ class _RouteLineDetailScreenState extends State<RouteLineDetailScreen> {
                   ),
                 ],
               ),
-              const Padding(
-                padding: EdgeInsets.only(left: 8, top: 6, bottom: 6),
-                child: Icon(Icons.arrow_downward, size: 14, color: AppColors.gray400),
-              ),
+              const SizedBox(height: 8),
               // Hasta: dirección de destino
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -346,7 +343,7 @@ class _RouteLineDetailScreenState extends State<RouteLineDetailScreen> {
                     Expanded(child: Text(orderLine.productName, style: const TextStyle(fontSize: 13))),
                     Text(
                       '${orderLine.quantity.toInt()} ${orderLine.uom}',
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.primary),
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.greenTextColor),
                     ),
                   ],
                 ),
@@ -513,19 +510,19 @@ class _RouteLineDetailScreenState extends State<RouteLineDetailScreen> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             decoration: BoxDecoration(
-              color: AppColors.statusCompleted.withValues(alpha: 0.12),
+              color: context.greenTextColor.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.statusCompleted.withValues(alpha: 0.3)),
+              border: Border.all(color: context.greenTextColor.withValues(alpha: 0.4)),
             ),
-            child: const Row(
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.check_circle_rounded, color: AppColors.statusCompleted, size: 20),
-                SizedBox(width: 8),
+                Icon(Icons.check_circle_rounded, color: context.greenTextColor, size: 20),
+                const SizedBox(width: 8),
                 Text(
                   'Entrega completada',
                   style: TextStyle(
-                    color: AppColors.statusCompleted,
+                    color: context.greenTextColor,
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
@@ -609,7 +606,7 @@ class _RouteLineDetailScreenState extends State<RouteLineDetailScreen> {
 
   Color _getStateColor(String state) {
     switch (state) {
-      case 'done': return AppColors.statusCompleted;
+      case 'done': return context.greenTextColor;
       case 'picked_up': return AppColors.statusPickedUp;
       case 'in_progress': return AppColors.statusInProgress;
       case 'incomplete': case 'partial': return AppColors.statusIncomplete;
@@ -677,10 +674,10 @@ class _InfoCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
+                    color: context.greenTextColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(icon, size: 18, color: AppColors.primary),
+                  child: Icon(icon, size: 18, color: context.greenTextColor),
                 ),
                 const SizedBox(width: 10),
                 Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),

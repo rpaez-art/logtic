@@ -38,7 +38,7 @@ class PaginationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = activeColor ?? AppColors.primary;
+    final primary = activeColor ?? (isDark ? AppColors.darkGreen : AppColors.primary);
 
     if (totalPages <= 1 && totalItems <= (pageSizeOptions.firstOrNull ?? 5)) {
       return const SizedBox.shrink();
@@ -73,7 +73,7 @@ class PaginationBar extends StatelessWidget {
                     'Mostrar:',
                     style: TextStyle(
                       fontSize: 11,
-                      color: isDark ? AppColors.gray400 : AppColors.gray600,
+                      color: isDark ? AppColors.darkTextMuted : AppColors.gray600,
                     ),
                   ),
                   const SizedBox(width: 4),
@@ -81,10 +81,11 @@ class PaginationBar extends StatelessWidget {
                     value: pageSizeOptions.contains(pageSize) ? pageSize : pageSizeOptions.first,
                     underline: const SizedBox.shrink(),
                     isDense: true,
+                    dropdownColor: isDark ? AppColors.surfaceDarkMedium : AppColors.white,
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      color: isDark ? AppColors.white : AppColors.black,
+                      color: isDark ? AppColors.darkTextWhite : AppColors.black,
                     ),
                     items: pageSizeOptions.map((size) {
                       return DropdownMenuItem(
@@ -106,7 +107,7 @@ class PaginationBar extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: isDark ? AppColors.gray300 : AppColors.gray700,
+                    color: isDark ? AppColors.darkTextMuted : AppColors.gray700,
                   ),
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.end,
@@ -118,7 +119,7 @@ class PaginationBar extends StatelessWidget {
           // Fila inferior: Controles de navegación y chips numéricos
           if (totalPages > 1) ...[
             const SizedBox(height: 6),
-            const Divider(height: 1),
+            Divider(height: 1, color: isDark ? const Color(0xFF383C3E) : AppColors.gray200),
             const SizedBox(height: 6),
             FittedBox(
               fit: BoxFit.scaleDown,
@@ -129,7 +130,7 @@ class PaginationBar extends StatelessWidget {
                 children: [
                   // Primera página
                   IconButton(
-                    icon: const Icon(Icons.first_page_rounded, size: 18),
+                    icon: Icon(Icons.first_page_rounded, size: 18, color: isDark ? AppColors.darkGreen : AppColors.primary),
                     onPressed: currentPage > 1 ? () => onPageChanged(1) : null,
                     tooltip: 'Primera página',
                     visualDensity: VisualDensity.compact,
@@ -144,6 +145,8 @@ class PaginationBar extends StatelessWidget {
                     icon: const Icon(Icons.chevron_left_rounded, size: 15),
                     label: const Text('Anterior', style: TextStyle(fontSize: 11)),
                     style: OutlinedButton.styleFrom(
+                      foregroundColor: isDark ? AppColors.darkGreen : AppColors.primary,
+                      side: BorderSide(color: isDark ? AppColors.darkGreen : AppColors.gray300),
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       minimumSize: const Size(0, 28),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -190,8 +193,8 @@ class PaginationBar extends StatelessWidget {
                                 fontSize: 11,
                                 fontWeight: isCurr ? FontWeight.bold : FontWeight.normal,
                                 color: isCurr
-                                    ? AppColors.white
-                                    : (isDark ? AppColors.gray300 : AppColors.gray700),
+                                    ? (isDark ? AppColors.black : AppColors.white)
+                                    : (isDark ? AppColors.darkTextWhite : AppColors.gray700),
                               ),
                             ),
                           ),
@@ -207,6 +210,8 @@ class PaginationBar extends StatelessWidget {
                     icon: const Icon(Icons.chevron_right_rounded, size: 15),
                     label: const Text('Siguiente', style: TextStyle(fontSize: 11)),
                     style: OutlinedButton.styleFrom(
+                      foregroundColor: isDark ? AppColors.darkGreen : AppColors.primary,
+                      side: BorderSide(color: isDark ? AppColors.darkGreen : AppColors.gray300),
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       minimumSize: const Size(0, 28),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -217,7 +222,7 @@ class PaginationBar extends StatelessWidget {
 
                   // Última página
                   IconButton(
-                    icon: const Icon(Icons.last_page_rounded, size: 18),
+                    icon: Icon(Icons.last_page_rounded, size: 18, color: isDark ? AppColors.darkGreen : AppColors.primary),
                     onPressed: currentPage < totalPages ? () => onPageChanged(totalPages) : null,
                     tooltip: 'Última página',
                     visualDensity: VisualDensity.compact,

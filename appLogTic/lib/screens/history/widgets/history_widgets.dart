@@ -135,10 +135,10 @@ class _HistoryRouteCardState extends State<HistoryRouteCard> {
                     Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
+                        color: context.greenTextColor.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(Icons.route, color: AppColors.primary, size: 20),
+                      child: Icon(Icons.route, color: context.greenTextColor, size: 20),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -154,11 +154,11 @@ class _HistoryRouteCardState extends State<HistoryRouteCard> {
                       children: [
                         Text(
                           item.durationFormatted,
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.corpGreen),
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: context.greenTextColor),
                         ),
                         Text(
                           '${item.completedDeliveries}/${item.totalDeliveries}',
-                          style: const TextStyle(fontSize: 12, color: AppColors.gray500),
+                          style: TextStyle(fontSize: 12, color: context.subtextColor),
                         ),
                       ],
                     ),
@@ -166,12 +166,12 @@ class _HistoryRouteCardState extends State<HistoryRouteCard> {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      const Icon(Icons.calendar_today, size: 14, color: AppColors.gray500),
+                      Icon(Icons.calendar_today, size: 14, color: context.subtextColor),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           item.date,
-                          style: const TextStyle(fontSize: 12, color: AppColors.gray500),
+                          style: TextStyle(fontSize: 12, color: context.subtextColor),
                         ),
                       ),
                       AnimatedRotation(
@@ -180,7 +180,7 @@ class _HistoryRouteCardState extends State<HistoryRouteCard> {
                         child: Icon(
                           Icons.keyboard_arrow_down,
                           size: 20,
-                          color: AppColors.primary,
+                          color: context.greenTextColor,
                         ),
                       ),
                     ],
@@ -191,9 +191,9 @@ class _HistoryRouteCardState extends State<HistoryRouteCard> {
                       Expanded(
                         child: LinearProgressIndicator(
                           value: completionRate / 100,
-                          backgroundColor: AppColors.gray200,
+                          backgroundColor: context.isDarkMode ? const Color(0xFF383C3E) : AppColors.gray200,
                           valueColor: AlwaysStoppedAnimation<Color>(
-                            completionRate >= 100 ? AppColors.statusCompleted : AppColors.secondary,
+                            completionRate >= 100 ? context.greenTextColor : AppColors.secondary,
                           ),
                           minHeight: 6,
                         ),
@@ -204,7 +204,7 @@ class _HistoryRouteCardState extends State<HistoryRouteCard> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: completionRate >= 100 ? AppColors.statusCompleted : AppColors.secondary,
+                          color: completionRate >= 100 ? context.greenTextColor : AppColors.secondary,
                         ),
                       ),
                     ],
@@ -426,15 +426,15 @@ class _HistoryLineCardState extends State<HistoryLineCard> {
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(10)),
+                  decoration: BoxDecoration(color: context.greenTextColor.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(10)),
                   child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                     Row(children: [
-                      const Icon(Icons.inventory, size: 18, color: AppColors.primary),
+                      Icon(Icons.inventory, size: 18, color: context.greenTextColor),
                       const SizedBox(width: 8),
-                      Text('${line.orderLines!.length} productos', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.primary)),
-                      if (line.orderName != null) Text(' • ${line.orderName}', style: const TextStyle(fontSize: 11, color: AppColors.gray600)),
+                      Text('${line.orderLines!.length} productos', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: context.greenTextColor)),
+                      if (line.orderName != null) Text(' • ${line.orderName}', style: TextStyle(fontSize: 11, color: context.subtextColor)),
                     ]),
-                    Icon(_showProducts ? Icons.expand_less : Icons.expand_more, color: AppColors.primary, size: 20),
+                    Icon(_showProducts ? Icons.expand_less : Icons.expand_more, color: context.greenTextColor, size: 20),
                   ]),
                 ),
               ),
@@ -446,7 +446,7 @@ class _HistoryLineCardState extends State<HistoryLineCard> {
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                         Expanded(child: Text(orderLine.productName, style: const TextStyle(fontSize: 12))),
-                        Text('${orderLine.quantity.toInt()} ${orderLine.uom}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.primary)),
+                        Text('${orderLine.quantity.toInt()} ${orderLine.uom}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: context.greenTextColor)),
                       ]),
                     )).toList(),
                   ),
@@ -505,16 +505,16 @@ class EmptyHistorySection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.all(20),
-      color: AppColors.gray50,
-      child: const Padding(
-        padding: EdgeInsets.all(48),
+      color: context.containerColor,
+      child: Padding(
+        padding: const EdgeInsets.all(48),
         child: Column(
           children: [
-            Icon(Icons.history, size: 64, color: AppColors.gray400),
-            SizedBox(height: 16),
+            const Icon(Icons.history, size: 64, color: AppColors.gray400),
+            const SizedBox(height: 16),
             Text(
               'Sin historial de rutas',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.gray600),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: context.subtextColor),
             ),
             SizedBox(height: 8),
             Text(

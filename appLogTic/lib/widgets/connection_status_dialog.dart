@@ -267,12 +267,12 @@ class _ConnectionStatusDialogState extends State<ConnectionStatusDialog> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.15),
+                        color: context.greenTextColor.withValues(alpha: 0.15),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.sensors_rounded,
-                        color: AppColors.primary,
+                        color: context.greenTextColor,
                         size: 24,
                       ),
                     ),
@@ -286,14 +286,14 @@ class _ConnectionStatusDialogState extends State<ConnectionStatusDialog> {
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: isDark ? AppColors.white : AppColors.gray900,
+                              color: context.primaryTextColor,
                             ),
                           ),
                           Text(
                             'Diagnóstico de Servidor y FCM',
                             style: TextStyle(
                               fontSize: 12,
-                              color: isDark ? AppColors.gray400 : AppColors.gray500,
+                              color: context.subtextColor,
                             ),
                           ),
                         ],
@@ -303,7 +303,7 @@ class _ConnectionStatusDialogState extends State<ConnectionStatusDialog> {
                       onPressed: () => Navigator.of(context).pop(),
                       icon: Icon(
                         Icons.close,
-                        color: isDark ? AppColors.gray400 : AppColors.gray600,
+                        color: context.subtextColor,
                       ),
                       tooltip: 'Cerrar',
                     ),
@@ -318,7 +318,7 @@ class _ConnectionStatusDialogState extends State<ConnectionStatusDialog> {
                 // Section 1: Servidor Odoo
                 _buildSectionHeader(
                   icon: Icons.cloud_outlined,
-                  title: 'Servidor Odoo (REST API)',
+                  title: 'Servidor Odoo',
                   state: _serverState,
                   isDark: isDark,
                 ),
@@ -326,17 +326,14 @@ class _ConnectionStatusDialogState extends State<ConnectionStatusDialog> {
                 _buildCard(
                   isDark: isDark,
                   children: [
-                    _buildInfoRow('URL Servidor:', AppConfig.odooBaseUrl, isDark),
                     if (_serverLatencyMs != null)
-                      _buildInfoRow('Latencia:', '$_serverLatencyMs ms', isDark, isHighlighted: true),
+                      _buildInfoRow('Tiempo de Respuesta:', '$_serverLatencyMs ms', isDark, isHighlighted: true),
                     _buildInfoRow(
-                      'Usuario Activo:',
-                      user != null ? '${user.fullName} (@${user.username})' : 'No autenticado',
+                      'Usuario en Sesión:',
+                      user != null ? user.fullName : 'No autenticado',
                       isDark,
                     ),
-                    if (user?.driverId != null && user!.driverId > 0)
-                      _buildInfoRow('ID Conductor:', '${user.driverId}', isDark),
-                    _buildInfoRow('Última Sync:', odoo.lastSyncTime.isNotEmpty ? odoo.lastSyncTime : 'No realizada', isDark),
+                    _buildInfoRow('Última Sincronización:', odoo.lastSyncTime.isNotEmpty ? odoo.lastSyncTime : 'No realizada', isDark),
                     const SizedBox(height: 4),
                     _buildStatusMessage(_serverMessage, _serverState, isDark),
                   ],
@@ -346,7 +343,7 @@ class _ConnectionStatusDialogState extends State<ConnectionStatusDialog> {
                 // Section 2: Firebase Cloud Messaging
                 _buildSectionHeader(
                   icon: Icons.notifications_active_outlined,
-                  title: 'Notificaciones Push (FCM)',
+                  title: 'Notificaciones Push',
                   state: _fcmState,
                   isDark: isDark,
                 ),
@@ -354,65 +351,17 @@ class _ConnectionStatusDialogState extends State<ConnectionStatusDialog> {
                 _buildCard(
                   isDark: isDark,
                   children: [
-                    _buildInfoRow('Permisos Dispositivo:', _fcmPermission, isDark),
+                    _buildInfoRow('Permisos en Dispositivo:', _fcmPermission, isDark),
                     _buildInfoRow(
-                      'Registro en Backend:',
-                      _fcmRegisteredInBackend ? 'Vinculado en Odoo' : 'Pendiente / No registrado',
+                      'Recepción en Segundo Plano:',
+                      _fcmToken != null ? 'Habilitado' : 'No disponible',
                       isDark,
                     ),
-                    if (_fcmToken != null) ...[
-                      const SizedBox(height: 6),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Token FCM:',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? AppColors.gray300 : AppColors.gray700,
-                            ),
-                          ),
-                          const Spacer(),
-                          TextButton.icon(
-                            onPressed: () {
-                              Clipboard.setData(ClipboardData(text: _fcmToken!));
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Token FCM copiado al portapapeles'),
-                                  duration: Duration(seconds: 2),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.copy_rounded, size: 14),
-                            label: const Text('Copiar', style: TextStyle(fontSize: 11)),
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: isDark ? AppColors.corpDarkGray : AppColors.gray100,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          _fcmToken!,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 10,
-                            color: isDark ? AppColors.gray300 : AppColors.gray600,
-                          ),
-                        ),
-                      ),
-                    ],
+                    _buildInfoRow(
+                      'Sincronización con Servidor:',
+                      _fcmRegisteredInBackend ? 'Conectado' : (_fcmToken != null ? 'Listo' : 'Pendiente'),
+                      isDark,
+                    ),
                     const SizedBox(height: 4),
                     _buildStatusMessage(_fcmMessage, _fcmState, isDark),
                   ],
@@ -430,9 +379,9 @@ class _ConnectionStatusDialogState extends State<ConnectionStatusDialog> {
                 _buildCard(
                   isDark: isDark,
                   children: [
-                    _buildInfoRow('Canal Android:', 'logtic_push_channel (Alta prioridad)', isDark),
-                    _buildInfoRow('Sync en 2º Plano:', 'Activo (periódico cada 5 min)', isDark),
-                    _buildInfoRow('No Leídas (Badge):', '${badge.unreadCount} notificaciones', isDark),
+                    _buildInfoRow('Canal de Notificaciones:', 'Activo y prioritario', isDark),
+                    _buildInfoRow('Sincronización en Segundo Plano:', 'Activa (cada 5 min)', isDark),
+                    _buildInfoRow('Notificaciones Pendientes:', '${badge.unreadCount}', isDark),
                     if (_testNotificationFeedback != null) ...[
                       const SizedBox(height: 6),
                       Row(
@@ -444,7 +393,7 @@ class _ConnectionStatusDialogState extends State<ConnectionStatusDialog> {
                             size: 14,
                             color: _testNotificationFeedback!.contains('Error')
                                 ? AppColors.error
-                                : AppColors.statusCompleted,
+                                : (isDark ? AppColors.darkGreen : AppColors.statusCompleted),
                           ),
                           const SizedBox(width: 4),
                           Expanded(
@@ -455,7 +404,7 @@ class _ConnectionStatusDialogState extends State<ConnectionStatusDialog> {
                                 fontWeight: FontWeight.w500,
                                 color: _testNotificationFeedback!.contains('Error')
                                     ? AppColors.error
-                                    : AppColors.statusCompleted,
+                                    : (isDark ? AppColors.darkGreen : AppColors.statusCompleted),
                               ),
                             ),
                           ),
@@ -475,6 +424,8 @@ class _ConnectionStatusDialogState extends State<ConnectionStatusDialog> {
                         icon: const Icon(Icons.refresh_rounded, size: 18),
                         label: const Text('Reverificar'),
                         style: OutlinedButton.styleFrom(
+                          foregroundColor: isDark ? AppColors.darkGreen : AppColors.primary,
+                          side: BorderSide(color: isDark ? AppColors.darkGreen : AppColors.primary),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
@@ -485,16 +436,16 @@ class _ConnectionStatusDialogState extends State<ConnectionStatusDialog> {
                       child: ElevatedButton.icon(
                         onPressed: _isSendingTestNotification ? null : _sendTestNotification,
                         icon: _isSendingTestNotification
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white),
+                                child: CircularProgressIndicator(strokeWidth: 2, color: isDark ? AppColors.black : AppColors.white),
                               )
                             : const Icon(Icons.notifications_active, size: 18),
                         label: const Text('Probar Push'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: AppColors.white,
+                          backgroundColor: isDark ? AppColors.darkGreen : AppColors.primary,
+                          foregroundColor: isDark ? AppColors.black : AppColors.white,
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
@@ -521,13 +472,13 @@ class _ConnectionStatusDialogState extends State<ConnectionStatusDialog> {
     String text;
 
     if (isTesting) {
-      bg = AppColors.primary.withValues(alpha: 0.12);
-      fg = AppColors.primary;
+      bg = (isDark ? AppColors.darkGreen : AppColors.primary).withValues(alpha: 0.15);
+      fg = isDark ? AppColors.darkGreen : AppColors.primary;
       icon = Icons.sync;
       text = 'Ejecutando diagnóstico en tiempo real...';
     } else if (allOk) {
-      bg = AppColors.statusCompleted.withValues(alpha: 0.15);
-      fg = AppColors.statusCompleted;
+      bg = (isDark ? AppColors.darkGreen : AppColors.statusCompleted).withValues(alpha: 0.15);
+      fg = isDark ? AppColors.darkGreen : AppColors.statusCompleted;
       icon = Icons.check_circle_rounded;
       text = 'Todos los servicios conectados y operativos';
     } else if (hasError) {
@@ -574,17 +525,18 @@ class _ConnectionStatusDialogState extends State<ConnectionStatusDialog> {
     required CheckState state,
     required bool isDark,
   }) {
+    final greenCol = isDark ? AppColors.darkGreen : AppColors.primary;
     Widget stateWidget;
     switch (state) {
       case CheckState.testing:
-        stateWidget = const SizedBox(
+        stateWidget = SizedBox(
           width: 14,
           height: 14,
-          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+          child: CircularProgressIndicator(strokeWidth: 2, color: greenCol),
         );
         break;
       case CheckState.success:
-        stateWidget = const Icon(Icons.check_circle, color: AppColors.statusCompleted, size: 18);
+        stateWidget = Icon(Icons.check_circle, color: isDark ? AppColors.darkGreen : AppColors.statusCompleted, size: 18);
         break;
       case CheckState.warning:
         stateWidget = const Icon(Icons.warning, color: AppColors.warning, size: 18);
@@ -596,7 +548,7 @@ class _ConnectionStatusDialogState extends State<ConnectionStatusDialog> {
 
     return Row(
       children: [
-        Icon(icon, size: 18, color: AppColors.primary),
+        Icon(icon, size: 18, color: greenCol),
         const SizedBox(width: 8),
         Text(
           title,
@@ -640,7 +592,7 @@ class _ConnectionStatusDialogState extends State<ConnectionStatusDialog> {
             label,
             style: TextStyle(
               fontSize: 12,
-              color: isDark ? AppColors.gray400 : AppColors.gray600,
+              color: isDark ? AppColors.darkTextMuted : AppColors.gray600,
             ),
           ),
           const SizedBox(width: 8),
@@ -652,7 +604,7 @@ class _ConnectionStatusDialogState extends State<ConnectionStatusDialog> {
                 fontSize: 12,
                 fontWeight: isHighlighted ? FontWeight.bold : FontWeight.w500,
                 color: isHighlighted
-                    ? AppColors.primary
+                    ? (isDark ? AppColors.darkGreen : AppColors.primary)
                     : (isDark ? AppColors.white : AppColors.gray900),
               ),
             ),
@@ -666,10 +618,10 @@ class _ConnectionStatusDialogState extends State<ConnectionStatusDialog> {
     Color textColor;
     switch (state) {
       case CheckState.testing:
-        textColor = isDark ? AppColors.gray400 : AppColors.gray600;
+        textColor = isDark ? AppColors.darkTextMuted : AppColors.gray600;
         break;
       case CheckState.success:
-        textColor = AppColors.statusCompleted;
+        textColor = isDark ? AppColors.darkGreen : AppColors.statusCompleted;
         break;
       case CheckState.warning:
         textColor = AppColors.warning;

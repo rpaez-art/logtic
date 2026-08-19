@@ -32,10 +32,10 @@ class TodayProgressCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
+                        color: context.greenTextColor.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.today, color: AppColors.primary, size: 22),
+                      child: Icon(Icons.today, color: context.greenTextColor, size: 22),
                     ),
                     const SizedBox(width: 10),
                     const Text('Progreso de Hoy', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
@@ -43,12 +43,12 @@ class TodayProgressCard extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: onViewRoutes,
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('Ver rutas', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
-                      SizedBox(width: 4),
-                      Icon(Icons.arrow_forward, color: AppColors.primary, size: 16),
+                      Text('Ver rutas', style: TextStyle(color: context.greenTextColor, fontWeight: FontWeight.w600)),
+                      const SizedBox(width: 4),
+                      Icon(Icons.arrow_forward, color: context.greenTextColor, size: 16),
                     ],
                   ),
                 ),
@@ -70,7 +70,7 @@ class TodayProgressCard extends StatelessWidget {
                         child: CircularProgressIndicator(
                           value: 1.0,
                           strokeWidth: 10,
-                          color: AppColors.gray200,
+                          color: context.isDarkMode ? const Color(0xFF383C3E) : AppColors.gray200,
                         ),
                       ),
                       SizedBox(
@@ -84,7 +84,7 @@ class TodayProgressCard extends StatelessWidget {
                             return CircularProgressIndicator(
                               value: value,
                               strokeWidth: 10,
-                              color: AppColors.primary,
+                              color: context.greenTextColor,
                             );
                           },
                         ),
@@ -99,13 +99,13 @@ class TodayProgressCard extends StatelessWidget {
                             builder: (context, value, _) {
                               return Text(
                                 '$value%',
-                                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primary),
+                                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: context.greenTextColor),
                               );
                             },
                           ),
                           Text(
                             '$completed de $total',
-                            style: const TextStyle(fontSize: 12, color: AppColors.gray500),
+                            style: TextStyle(fontSize: 12, color: context.subtextColor),
                           ),
                         ],
                       ),
@@ -149,7 +149,7 @@ class TodayStatItem extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           '$value $label',
-          style: TextStyle(fontSize: 14, color: context.onSurfaceColor),
+          style: TextStyle(fontSize: 14, color: context.primaryTextColor),
         ),
       ],
     );

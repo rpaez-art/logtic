@@ -135,7 +135,7 @@ class DrawerItem extends StatelessWidget {
       child: ListTile(
         leading: Icon(
           selected ? activeIcon : icon,
-          color: selected ? AppColors.primary : AppColors.gray500,
+          color: selected ? context.greenTextColor : context.subtextColor,
           size: 22,
         ),
         title: Text(
@@ -143,12 +143,12 @@ class DrawerItem extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             fontWeight: selected ? FontWeight.bold : FontWeight.w500,
-            color: selected ? AppColors.primary : AppColors.gray700,
+            color: selected ? context.greenTextColor : context.primaryTextColor,
           ),
         ),
         trailing: trailing,
         selected: selected,
-        selectedTileColor: AppColors.primary.withValues(alpha: 0.08),
+        selectedTileColor: context.greenTextColor.withValues(alpha: 0.12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         onTap: onTap,
         horizontalTitleGap: 12,
@@ -181,9 +181,9 @@ class RouteStatusSummary extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.gray50,
+        color: context.containerColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.gray200),
+        border: Border.all(color: context.borderColor),
       ),
       child: Row(
         children: [
@@ -197,7 +197,7 @@ class RouteStatusSummary extends StatelessWidget {
           Container(
             width: 1,
             height: 24,
-            color: AppColors.gray200,
+            color: context.borderColor,
           ),
           const SizedBox(width: 8),
           StatusChip(
@@ -210,15 +210,15 @@ class RouteStatusSummary extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: context.greenTextColor.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               '$totalCount total',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
-                color: AppColors.primary,
+                color: context.greenTextColor,
               ),
             ),
           ),
@@ -251,18 +251,18 @@ class StatusChip extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           '$count',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
-            color: AppColors.corpDarkGray,
+            color: context.primaryTextColor,
           ),
         ),
         const SizedBox(width: 2),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
-            color: AppColors.gray600,
+            color: context.subtextColor,
           ),
         ),
       ],
@@ -326,10 +326,10 @@ class RailHeader extends StatelessWidget {
             name,
             overflow: TextOverflow.ellipsis,
             maxLines: 1,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: AppColors.corpDarkGray,
+              color: context.primaryTextColor,
             ),
           ),
           if (isAdmin)
@@ -596,10 +596,10 @@ class _ExpandableRutasItemState extends State<ExpandableRutasItem> {
                     children: [
                       Text(
                         route.clientName.isNotEmpty ? route.clientName : 'Ruta #${route.id}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
-                          color: AppColors.corpDarkGray,
+                          color: context.primaryTextColor,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -607,9 +607,9 @@ class _ExpandableRutasItemState extends State<ExpandableRutasItem> {
                       const SizedBox(height: 1),
                       Text(
                         route.address.isNotEmpty ? route.address : 'Sin dirección',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.gray400,
+                          color: context.subtextColor,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -620,10 +620,10 @@ class _ExpandableRutasItemState extends State<ExpandableRutasItem> {
                 const SizedBox(width: 8),
                 Text(
                   route.scheduledTime.length >= 5 ? route.scheduledTime.substring(0, 5) : '',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.gray500,
+                    color: context.subtextColor,
                   ),
                 ),
               ],

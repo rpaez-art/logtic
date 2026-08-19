@@ -588,18 +588,18 @@ class _RouteHistoryScreenState extends State<RouteHistoryScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary
+              ? (isDark ? AppColors.darkGreen : AppColors.primary)
               : (isDark ? AppColors.surfaceDark : AppColors.white),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
-                ? AppColors.primary
+                ? (isDark ? AppColors.darkGreen : AppColors.primary)
                 : (isDark ? AppColors.gray700 : AppColors.gray300),
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.3),
+                    color: (isDark ? AppColors.darkGreen : AppColors.primary).withValues(alpha: 0.3),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   )
@@ -613,8 +613,8 @@ class _RouteHistoryScreenState extends State<RouteHistoryScreen> {
               icon,
               size: 14,
               color: isSelected
-                  ? AppColors.white
-                  : (isDark ? AppColors.gray300 : AppColors.gray700),
+                  ? (isDark ? AppColors.black : AppColors.white)
+                  : (isDark ? AppColors.darkGreen : AppColors.primary),
             ),
             const SizedBox(width: 4),
             Text(
@@ -623,8 +623,8 @@ class _RouteHistoryScreenState extends State<RouteHistoryScreen> {
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 color: isSelected
-                    ? AppColors.white
-                    : (isDark ? AppColors.gray300 : AppColors.gray700),
+                    ? (isDark ? AppColors.black : AppColors.white)
+                    : (isDark ? AppColors.darkTextWhite : AppColors.gray700),
               ),
             ),
           ],
@@ -1075,10 +1075,10 @@ class _HistoryLineCardState extends State<_HistoryLineCard> {
                                       ),
                                     ),
                                     const SizedBox(width: 4),
-                                    const Icon(
+                                    Icon(
                                       Icons.info_outline_rounded,
                                       size: 16,
-                                      color: AppColors.primary,
+                                      color: context.greenTextColor,
                                     ),
                                   ],
                                 ),
@@ -1088,12 +1088,12 @@ class _HistoryLineCardState extends State<_HistoryLineCard> {
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Icon(Icons.place_outlined, size: 13, color: AppColors.gray600),
+                                        Icon(Icons.place_outlined, size: 13, color: context.subtextColor),
                                         const SizedBox(width: 3),
                                         Expanded(
                                           child: Text(
                                             line.obra!,
-                                            style: const TextStyle(fontSize: 12, color: AppColors.gray600),
+                                            style: TextStyle(fontSize: 12, color: context.subtextColor),
                                             softWrap: true,
                                           ),
                                         ),
@@ -1150,26 +1150,23 @@ class _HistoryLineCardState extends State<_HistoryLineCard> {
                           if (_originAddress != null && _originAddress!.isNotEmpty)
                             Text(
                               _originAddress!,
-                              style: const TextStyle(fontSize: 12, color: AppColors.gray500),
+                              style: const TextStyle(fontSize: 13),
                             )
                           else ...[
                             Text(
                               'Desde: Mi ubicación',
                               style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.subtextColor),
                             ),
-                            const Text(
+                            Text(
                               'Tu posición actual (GPS)',
-                              style: TextStyle(fontSize: 12, color: AppColors.gray500),
+                              style: TextStyle(fontSize: 12, color: context.subtextColor),
                             ),
                           ],
                         ],
                       ),
                     ),
                   ]),
-                  const Padding(
-                    padding: EdgeInsets.only(left: 8, top: 6, bottom: 6),
-                    child: Icon(Icons.arrow_downward, size: 14, color: AppColors.gray400),
-                  ),
+                  const SizedBox(height: 8),
                   // Hasta: dirección de destino
                   Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     const Icon(Icons.location_on, size: 16, color: AppColors.statusCompleted),
@@ -1189,7 +1186,7 @@ class _HistoryLineCardState extends State<_HistoryLineCard> {
                             Text(line.street!, style: const TextStyle(fontSize: 13)),
                           ],
                           if (line.city != null && line.city!.isNotEmpty)
-                            Text(line.city!, style: const TextStyle(fontSize: 11, color: AppColors.gray600)),
+                            Text(line.city!, style: TextStyle(fontSize: 11, color: context.subtextColor)),
                         ],
                       ),
                     ),
@@ -1249,15 +1246,15 @@ class _HistoryLineCardState extends State<_HistoryLineCard> {
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(10)),
+                  decoration: BoxDecoration(color: context.greenTextColor.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(10)),
                   child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                     Row(children: [
-                      const Icon(Icons.inventory, size: 18, color: AppColors.primary),
+                      Icon(Icons.inventory, size: 18, color: context.greenTextColor),
                       const SizedBox(width: 8),
-                      Text('${line.orderLines!.length} productos', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.primary)),
-                      if (line.orderName != null) Text(' • ${line.orderName}', style: const TextStyle(fontSize: 11, color: AppColors.gray600)),
+                      Text('${line.orderLines!.length} productos', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: context.greenTextColor)),
+                      if (line.orderName != null) Text(' • ${line.orderName}', style: TextStyle(fontSize: 11, color: context.subtextColor)),
                     ]),
-                    Icon(_showProducts ? Icons.expand_less : Icons.expand_more, color: AppColors.primary, size: 20),
+                    Icon(_showProducts ? Icons.expand_less : Icons.expand_more, color: context.greenTextColor, size: 20),
                   ]),
                 ),
               ),

@@ -31,20 +31,30 @@ class PeriodSelector extends StatelessWidget {
             child: FilterChip(
               selected: isSelected,
               onSelected: (_) => onPeriodSelected(period.$1),
-              avatar: Icon(period.$3, size: 16, color: isSelected ? AppColors.white : context.onSurfaceColor),
+              avatar: Icon(
+                period.$3,
+                size: 16,
+                color: isSelected
+                    ? (context.isDarkMode ? AppColors.black : AppColors.white)
+                    : (context.isDarkMode ? AppColors.darkGreen : AppColors.corpGreen),
+              ),
               label: Text(
                 period.$2,
                 style: TextStyle(
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  color: isSelected ? AppColors.white : context.onSurfaceColor,
+                  color: isSelected
+                      ? (context.isDarkMode ? AppColors.black : AppColors.white)
+                      : (context.isDarkMode ? AppColors.darkTextWhite : AppColors.gray700),
                   fontSize: 13,
                 ),
               ),
-              selectedColor: AppColors.corpGreen,
-              checkmarkColor: AppColors.white,
+              selectedColor: context.isDarkMode ? AppColors.darkGreen : AppColors.corpGreen,
+              checkmarkColor: context.isDarkMode ? AppColors.black : AppColors.white,
               backgroundColor: context.containerColor,
               side: BorderSide(
-                color: isSelected ? AppColors.corpGreen : context.borderColor,
+                color: isSelected
+                    ? (context.isDarkMode ? AppColors.darkGreen : AppColors.corpGreen)
+                    : context.borderColor,
                 width: isSelected ? 1.5 : 1,
               ),
             ),
